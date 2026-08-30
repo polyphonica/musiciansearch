@@ -100,7 +100,11 @@ Done (2026-08-30):
 - `.env.example` covering DB, Stripe, Twilio, and app secrets.
 - Placeholder home page wired to shadcn/ui + Framer Motion; `npm run build`, `npm run lint`, and `npm run dev` all verified working.
 
+Also done (2026-08-30, continued):
+- Git initialized, committed, and pushed to `origin` (https://github.com/polyphonica/musiciansearch.git).
+- **Local dev database:** this machine already runs several other Postgres instances (EDB installs for other projects, a Homebrew `postgresql@15`), so a dedicated, isolated instance was set up rather than reusing any of them: Homebrew `postgresql@17` (matches the PostGIS build target) on **port 5544** (5432 was already taken), with PostGIS 3.6 enabled directly in the `musiciansearch` database. Homebrew's `postgis` formula doesn't auto-link its extension files into a same-time-installed `postgresql@17` keg — they were copied manually from `postgis`'s Cellar share/lib dirs into `postgresql@17`'s own share/lib dirs once. `.env`'s `DATABASE_URL` points at this instance for local dev; `docker-compose.yml`'s `db` service (port 5432 internally) is what production/VPS deployment actually uses.
+- First migration applied: `npx prisma migrate dev --name init` — all 13 model tables plus PostGIS's `spatial_ref_sys` confirmed present.
+- **Node version gotcha:** this machine had a stray Node 21.5.0 at `/usr/local/bin/node` (ahead of Homebrew's bin in PATH in some shell contexts), which crashes Prisma's CLI (`util.styleText` missing). Fixed by `brew install node` (now v26.8.1, at `/opt/homebrew/bin/node`, earlier in PATH). If Prisma CLI commands mysteriously crash again, check `node -v` first.
+
 Not done yet (still ahead in Phase 3):
-- No database migrations run yet (`npx prisma migrate dev`) — needs a reachable Postgres/PostGIS instance first.
 - No actual signup/auth/verification/search/messaging pages or API routes — only the data model and a placeholder landing page exist so far.
-- Git not yet initialized for this project.

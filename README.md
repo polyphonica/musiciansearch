@@ -18,6 +18,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 A local Postgres with PostGIS is required for anything that touches the database — either run one directly, or bring up just the `db` service from `docker-compose.yml` (`docker compose up db`) and point `DATABASE_URL` at `localhost`.
 
+On this dev machine specifically, a dedicated Homebrew `postgresql@17` + PostGIS instance runs on port **5544** (other Postgres instances on this machine already use the default 5432) — see `.env` and `docs/technical-design.md` for details.
+
 ## Database
 
 Schema lives in `prisma/schema.prisma`. Prisma 7 generates the client into `src/generated/prisma` (gitignored, regenerated via `prisma generate`/`postinstall`) and requires a driver adapter — see `src/lib/prisma.ts`. Connection config is in `prisma.config.ts`, not the schema file.
