@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -16,10 +17,12 @@ export default function Home() {
       </motion.h1>
       <p className="max-w-md text-muted-foreground">
         Find musicians to play with — bandmates, accompanists, and jam
-        partners. Scaffold placeholder; the real signup/search flow lands in
-        the MVP build.
+        partners. Search and messaging land after signup/verification; this
+        is the first working slice of the MVP.
       </p>
-      <Button>Get started</Button>
+      <Link href="/signup" className={buttonVariants({})}>
+        Get started
+      </Link>
     </div>
   );
 }

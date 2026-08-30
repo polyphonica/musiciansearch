@@ -106,5 +106,23 @@ Also done (2026-08-30, continued):
 - First migration applied: `npx prisma migrate dev --name init` — all 13 model tables plus PostGIS's `spatial_ref_sys` confirmed present.
 - **Node version gotcha:** this machine had a stray Node 21.5.0 at `/usr/local/bin/node` (ahead of Homebrew's bin in PATH in some shell contexts), which crashes Prisma's CLI (`util.styleText` missing). Fixed by `brew install node` (now v26.8.1, at `/opt/homebrew/bin/node`, earlier in PATH). If Prisma CLI commands mysteriously crash again, check `node -v` first.
 
+## Phase 3 Progress: Signup / OTP / Disclaimer / Stripe Identity Flow (2026-08-30)
+
+Built the full account-creation flow end to end:
+- `/signup` → `POST /api/auth/signup`: collects email + phone, upserts a `User` row, sends a Twilio Verify SMS code.
+- `/verify` → `POST /api/auth/verify-otp`: checks the code via Twilio Verify, sets `phoneVerifiedAt`, and creates a session (see below).
+- `/disclaimer` → `POST /api/disclaimer/accept`: shows the safety disclaimer from `requirements.md` and records acceptance in `DisclaimerAcceptance`, gated on phone verification.
+- `/verify-identity` → `POST /api/identity/start`: creates a Stripe Identity `VerificationSession` (document + selfie), gated on phone verification and disclaimer acceptance, then redirects to Stripe's hosted verification page (`session.url`).
+- `/verify-identity/return`: landing page after the Stripe-hosted flow; actual confirmation happens asynchronously via webhook.
+- `POST /api/webhooks/stripe`: verifies the Stripe signature and sets `identityVerifiedAt` on `identity.verification_session.verified`.
+- `GET /api/auth/me`: returns the current session's verification/disclaimer status for client-side gating.
+
+**Session handling (simplification from the original plan):** rather than building both a phone-OTP flow and a separate magic-link email login, phone OTP now serves as both signup verification and the ongoing login mechanism — one fewer moving part for the MVP. Sessions are a simple HMAC-signed httpOnly cookie (`src/lib/session.ts`, `SESSION_SECRET`), not a JWT library or database-backed session table; revisit if session revocation/multi-device management becomes a real requirement.
+
+**Implementation gotcha:** `new Stripe(process.env.STRIPE_SECRET_KEY)` and `twilio(sid, token)` both throw immediately if their credentials are empty/invalid — which happens during `next build`'s route-collection step (before any request is ever made), not just at runtime. Both `src/lib/stripe.ts` and `src/lib/twilio.ts` now lazily construct their client behind a `Proxy` so the build succeeds with empty `.env` credentials; the real client is only created on first actual use inside a request handler.
+
+**Not yet tested against real Twilio/Stripe accounts** — this machine has no Twilio or Stripe credentials configured. The full request path was verified up to (and including) the external API call: input validation, Prisma upserts, and error handling all confirmed working via curl against the dev server; the pages render and build/lint pass. Once real `TWILIO_ACCOUNT_SID`/`AUTH_TOKEN`/`VERIFY_SERVICE_SID` and `STRIPE_SECRET_KEY`/`WEBHOOK_SECRET` are added to `.env`, the OTP send/check and the Stripe-hosted verification redirect need a real browser click-through to confirm end to end (the webhook also needs either the Stripe CLI's `stripe listen --forward-to` for local testing, or a deployed endpoint).
+
 Not done yet (still ahead in Phase 3):
-- No actual signup/auth/verification/search/messaging pages or API routes — only the data model and a placeholder landing page exist so far.
+- Search, messaging, and profile creation/editing pages and API routes.
+- Route-level gating middleware (currently each protected API route checks the session itself; no redirect-based page gating yet, e.g. visiting `/verify-identity` directly without a session doesn't redirect to `/signup`).
