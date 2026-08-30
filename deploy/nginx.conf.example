@@ -1,0 +1,29 @@
+# Reference nginx server block for MusicianSearch.
+# Copy into your VPS's nginx sites config (e.g. /etc/nginx/sites-available/musiciansearch),
+# adjust server_name and TLS cert paths, then symlink into sites-enabled and reload nginx.
+# TLS certs assumed to be managed via certbot, consistent with your other apps on this VPS.
+
+server {
+    listen 80;
+    server_name musiciansearch.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name musiciansearch.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/musiciansearch.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/musiciansearch.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

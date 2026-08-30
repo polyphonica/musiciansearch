@@ -1,0 +1,191 @@
+// MusicianSearch data model — see docs/technical-design.md for rationale.
+// PostGIS geography columns are marked Unsupported: Prisma Client can't
+// query/filter them directly, so geo-radius search uses $queryRaw
+// (ST_DWithin) against the `location` column instead.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionTier {
+  free
+  paid
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  advanced
+  professional
+}
+
+enum LookingFor {
+  band_member
+  accompanist
+  jam_partner
+}
+
+enum ReportStatus {
+  open
+  reviewed
+  actioned
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  phone                String    @unique
+  phoneVerifiedAt      DateTime? @map("phone_verified_at")
+  identityVerifiedAt   DateTime? @map("identity_verified_at")
+  stripeIdentitySessionId String? @map("stripe_identity_session_id")
+  subscriptionTier     SubscriptionTier @default(free) @map("subscription_tier")
+  stripeCustomerId     String?   @map("stripe_customer_id")
+  stripeSubscriptionId String?   @map("stripe_subscription_id")
+  status               UserStatus @default(active)
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  profile               Profile?
+  sentMessages          Message[]              @relation("SentMessages")
+  conversations         ConversationParticipant[]
+  reportsFiled          Report[]               @relation("ReportsFiled")
+  reportsReceived       Report[]               @relation("ReportsReceived")
+  disclaimerAcceptances DisclaimerAcceptance[]
+
+  @@map("users")
+}
+
+model Profile {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName  String   @map("display_name")
+  bio          String?
+  location     Unsupported("geography(Point, 4326)")?
+  locationLabel String? @map("location_label")
+  skillLevel   SkillLevel? @map("skill_level")
+  lookingFor   LookingFor[] @map("looking_for")
+  avatarUrl    String?  @map("avatar_url")
+  sampleMediaUrls String[] @map("sample_media_urls")
+  externalLinks   String[] @map("external_links")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  instruments  ProfileInstrument[]
+  genres       ProfileGenre[]
+  availability AvailabilitySlot[]
+
+  @@map("profiles")
+}
+
+model Instrument {
+  id       String   @id @default(uuid())
+  name     String   @unique
+  profiles ProfileInstrument[]
+
+  @@map("instruments")
+}
+
+model Genre {
+  id       String   @id @default(uuid())
+  name     String   @unique
+  profiles ProfileGenre[]
+
+  @@map("genres")
+}
+
+model ProfileInstrument {
+  profileId    String @map("profile_id")
+  instrumentId String @map("instrument_id")
+  profile      Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, instrumentId])
+  @@map("profile_instruments")
+}
+
+model ProfileGenre {
+  profileId String @map("profile_id")
+  genreId   String @map("genre_id")
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  genre     Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, genreId])
+  @@map("profile_genres")
+}
+
+model AvailabilitySlot {
+  id         String  @id @default(uuid())
+  profileId  String  @map("profile_id")
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int     @map("day_of_week") // 0=Sunday .. 6=Saturday
+  timeOfDay  String  @map("time_of_day") // e.g. "morning" | "afternoon" | "evening"
+
+  @@map("availability_slots")
+}
+
+model Conversation {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now()) @map("created_at")
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String       @map("conversation_id")
+  userId         String       @map("user_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id")
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  readAt         DateTime?    @map("read_at")
+
+  @@map("messages")
+}
+
+model Report {
+  id               String       @id @default(uuid())
+  reporterId       String       @map("reporter_id")
+  reporter         User         @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId   String       @map("reported_user_id")
+  reportedUser     User         @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reportedMessageId String?     @map("reported_message_id")
+  reason           String
+  status           ReportStatus @default(open)
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  @@map("reports")
+}
+
+model DisclaimerAcceptance {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disclaimerVersion  String   @map("disclaimer_version")
+  acceptedAt         DateTime @default(now()) @map("accepted_at")
+
+  @@map("disclaimer_acceptances")
+}
