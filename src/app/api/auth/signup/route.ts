@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMockOtpEnabled, MOCK_OTP_CODE } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { twilioClient, TWILIO_VERIFY_SERVICE_SID } from "@/lib/twilio";
 import { isValidEmail, isValidPhone } from "@/lib/validation";
@@ -26,6 +27,11 @@ export async function POST(request: Request) {
       { error: "That email is already associated with a different phone number." },
       { status: 409 }
     );
+  }
+
+  if (isMockOtpEnabled()) {
+    console.warn(`[MOCK] Skipping real SMS for ${phone} — use code ${MOCK_OTP_CODE} on /verify`);
+    return NextResponse.json({ ok: true, mock: true });
   }
 
   try {

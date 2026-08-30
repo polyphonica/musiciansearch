@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMockOtpEnabled, MOCK_OTP_CODE } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
 import { twilioClient, TWILIO_VERIFY_SERVICE_SID } from "@/lib/twilio";
@@ -13,21 +14,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid phone number and code are required." }, { status: 400 });
   }
 
-  let check;
-  try {
-    check = await twilioClient.verify.v2
-      .services(TWILIO_VERIFY_SERVICE_SID)
-      .verificationChecks.create({ to: phone, code });
-  } catch (err) {
-    console.error("Twilio Verify check failed:", err);
-    return NextResponse.json(
-      { error: "Couldn't check that code right now. Please try again shortly." },
-      { status: 502 }
-    );
-  }
+  if (isMockOtpEnabled()) {
+    if (code !== MOCK_OTP_CODE) {
+      return NextResponse.json({ error: "Incorrect or expired code." }, { status: 400 });
+    }
+  } else {
+    let check;
+    try {
+      check = await twilioClient.verify.v2
+        .services(TWILIO_VERIFY_SERVICE_SID)
+        .verificationChecks.create({ to: phone, code });
+    } catch (err) {
+      console.error("Twilio Verify check failed:", err);
+      return NextResponse.json(
+        { error: "Couldn't check that code right now. Please try again shortly." },
+        { status: 502 }
+      );
+    }
 
-  if (check.status !== "approved") {
-    return NextResponse.json({ error: "Incorrect or expired code." }, { status: 400 });
+    if (check.status !== "approved") {
+      return NextResponse.json({ error: "Incorrect or expired code." }, { status: 400 });
+    }
   }
 
   const user = await prisma.user.findUnique({ where: { phone } });

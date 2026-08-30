@@ -132,7 +132,18 @@ Rather than requiring real Stripe keys before building anything downstream of id
 - Verified end-to-end (2026-08-30): a phone-verified test user, driven via a manually-signed session cookie over curl (no real Twilio/Stripe credentials involved), went disclaimer → mock start → mock page (200) → mock-complete → `identityVerifiedAt` set. Confirmed the mock page and mock-complete both 404 when the flag is off.
 - **To go live with real Stripe Identity later:** set `MOCK_IDENTITY_VERIFICATION=false` (or remove it) and configure `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` — no other code changes needed, since `/api/identity/start` already falls through to the real Stripe path when the mock is off.
 
+## Dev-only mock for Twilio OTP (2026-08-30)
+
+Twilio requires upgrading off the free trial (adding a payment method) before provisioning a Verify service under its "Identity & Security" product category, on this account at least. Rather than requiring that upgrade before continuing, the same mock pattern used for Stripe Identity was applied to phone OTP:
+- `MOCK_OTP_VERIFICATION=true` in `.env`, gated by `isMockOtpEnabled()` in `src/lib/config.ts` — same double gate (env flag **and** `NODE_ENV !== "production"`) as the identity mock, for the same reason: cannot activate in a production build/deploy even if the flag leaks into a prod `.env`.
+- When active, `POST /api/auth/signup` skips the real Twilio `verifications.create` call and just logs the fixed test code to the server console; `POST /api/auth/verify-otp` skips the real Twilio `verificationChecks.create` call and compares directly against that fixed code (`MOCK_OTP_CODE = "123456"` in `src/lib/config.ts`) instead.
+- `/verify` shows a clearly-labeled dev-only banner with the code when the mock is active (checked server-side in `src/app/verify/page.tsx`, passed into the client form).
+- Verified end-to-end (2026-08-30) via real API calls (no manual DB rows needed this time, unlike the identity mock test): signup → verify-otp with `123456` → disclaimer accept → identity mock start → identity mock-complete, all the way to `{"phoneVerified":true,"disclaimerAccepted":true,"identityVerified":true}`. Also confirmed an incorrect code (`000000`) is correctly rejected even in mock mode.
+- **To go live with real Twilio later:** set `MOCK_OTP_VERIFICATION=false` (or remove it), upgrade the Twilio account off trial, and configure `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_VERIFY_SERVICE_SID` — no other code changes needed.
+
+Both `.env` credentials that ARE configured now: `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` (from the user's real Twilio account). `TWILIO_VERIFY_SERVICE_SID` is still blank — a Verify Service couldn't be provisioned without upgrading off trial, which is deferred per the mock above.
+
 Not done yet (still ahead in Phase 3):
 - Search, messaging, and profile creation/editing pages and API routes.
 - Route-level gating middleware (currently each protected API route checks the session itself; no redirect-based page gating yet, e.g. visiting `/verify-identity` directly without a session doesn't redirect to `/signup`).
-- Real Twilio/Stripe credentials still not configured — phone OTP still needs a real Twilio Verify Service to test past signup in a browser (the mock identity flow was verified via a directly-inserted, already-phone-verified test user rather than a real OTP).
+- Real Twilio Verify Service and real Stripe Identity/Billing keys — both currently mocked (see above). The full flow has only been tested through the mocks, never through a real SMS or a real Stripe-hosted verification page.
