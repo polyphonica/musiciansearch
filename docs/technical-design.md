@@ -123,6 +123,16 @@ Built the full account-creation flow end to end:
 
 **Not yet tested against real Twilio/Stripe accounts** — this machine has no Twilio or Stripe credentials configured. The full request path was verified up to (and including) the external API call: input validation, Prisma upserts, and error handling all confirmed working via curl against the dev server; the pages render and build/lint pass. Once real `TWILIO_ACCOUNT_SID`/`AUTH_TOKEN`/`VERIFY_SERVICE_SID` and `STRIPE_SECRET_KEY`/`WEBHOOK_SECRET` are added to `.env`, the OTP send/check and the Stripe-hosted verification redirect need a real browser click-through to confirm end to end (the webhook also needs either the Stripe CLI's `stripe listen --forward-to` for local testing, or a deployed endpoint).
 
+## Dev-only mock for Stripe Identity (2026-08-30)
+
+Rather than requiring real Stripe keys before building anything downstream of identity verification, `POST /api/identity/start` can bypass the real Stripe call entirely via `MOCK_IDENTITY_VERIFICATION=true` in `.env`:
+- `src/lib/config.ts`'s `isMockIdentityEnabled()` gates on **both** the env flag **and** `NODE_ENV !== "production"` — `next build`/`next start` force `NODE_ENV=production` regardless of the flag, so this cannot activate in a production deploy even if the flag leaks into a prod `.env` by mistake.
+- When active, `/api/identity/start` skips Stripe, stores a `mock_...`-prefixed fake session id, and returns `/verify-identity/mock` instead of a real Stripe hosted URL.
+- `/verify-identity/mock` (a clearly-labeled, dashed-border, dev-only page) and `POST /api/identity/mock-complete` simulate the hosted verification + webhook: the latter checks the mock flag again server-side and 404s if it's off, so the route is inert outside development regardless of what a client requests.
+- Verified end-to-end (2026-08-30): a phone-verified test user, driven via a manually-signed session cookie over curl (no real Twilio/Stripe credentials involved), went disclaimer → mock start → mock page (200) → mock-complete → `identityVerifiedAt` set. Confirmed the mock page and mock-complete both 404 when the flag is off.
+- **To go live with real Stripe Identity later:** set `MOCK_IDENTITY_VERIFICATION=false` (or remove it) and configure `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` — no other code changes needed, since `/api/identity/start` already falls through to the real Stripe path when the mock is off.
+
 Not done yet (still ahead in Phase 3):
 - Search, messaging, and profile creation/editing pages and API routes.
 - Route-level gating middleware (currently each protected API route checks the session itself; no redirect-based page gating yet, e.g. visiting `/verify-identity` directly without a session doesn't redirect to `/signup`).
+- Real Twilio/Stripe credentials still not configured — phone OTP still needs a real Twilio Verify Service to test past signup in a browser (the mock identity flow was verified via a directly-inserted, already-phone-verified test user rather than a real OTP).

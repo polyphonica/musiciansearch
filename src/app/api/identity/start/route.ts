@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, hasAcceptedCurrentDisclaimer } from "@/lib/auth";
+import { isMockIdentityEnabled } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
@@ -13,6 +14,16 @@ export async function POST() {
   }
   if (user.identityVerifiedAt) {
     return NextResponse.json({ error: "Identity already verified." }, { status: 400 });
+  }
+
+  if (isMockIdentityEnabled()) {
+    console.warn(`[MOCK] Identity verification bypass active for user ${user.id}`);
+    const mockSessionId = `mock_${user.id}_${Date.now()}`;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { stripeIdentitySessionId: mockSessionId },
+    });
+    return NextResponse.json({ url: "/verify-identity/mock" });
   }
 
   const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-identity/return`;
