@@ -31,7 +31,7 @@ export function MockIdentityForm() {
         <div className="rounded bg-destructive/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-destructive">
           Dev-only mock — not real Stripe Identity
         </div>
-        <h1 className="text-xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           Simulate identity verification
         </h1>
         <p className="text-sm text-muted-foreground">

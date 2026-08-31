@@ -41,7 +41,7 @@ export default function SignupPage() {
         className="w-full max-w-sm space-y-6"
       >
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Create your account</h1>
           <p className="text-sm text-muted-foreground">
             We&apos;ll text you a code to verify your phone number. Your contact
             details are never shown to other musicians.

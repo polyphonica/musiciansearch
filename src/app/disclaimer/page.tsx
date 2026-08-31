@@ -32,7 +32,7 @@ export default function DisclaimerPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-lg space-y-6"
       >
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
           Before you continue: a note on safety
         </h1>
         <div className="space-y-3 text-sm text-muted-foreground">

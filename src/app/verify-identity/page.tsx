@@ -29,7 +29,7 @@ export default function VerifyIdentityPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-sm space-y-6 text-center"
       >
-        <h1 className="text-2xl font-semibold tracking-tight">Verify your identity</h1>
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Verify your identity</h1>
         <p className="text-sm text-muted-foreground">
           Last step: we use Stripe Identity to confirm you&apos;re a real
           person with a matching government ID and a quick selfie. This

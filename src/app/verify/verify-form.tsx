@@ -46,7 +46,7 @@ export function VerifyForm({ mockEnabled }: { mockEnabled: boolean }) {
         </div>
       )}
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Enter your code</h1>
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Enter your code</h1>
         <p className="text-sm text-muted-foreground">
           We sent a text message to {phone || "your phone"}.
         </p>

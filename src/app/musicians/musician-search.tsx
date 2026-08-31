@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -207,9 +208,16 @@ export function MusicianSearch() {
       </p>
 
       <ul className="space-y-3">
-        {results.map((r) => (
-          <li key={r.id} className="rounded-lg border p-4">
-            <Link href={`/musicians/${r.id}`} className="font-medium hover:underline">
+        {results.map((r, i) => (
+          <motion.li
+            key={r.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: Math.min(i, 8) * 0.04 }}
+            whileHover={{ y: -3 }}
+            className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <Link href={`/musicians/${r.id}`} className="font-medium text-primary hover:underline">
               {r.displayName}
             </Link>
             {r.locationLabel && (
@@ -221,7 +229,7 @@ export function MusicianSearch() {
                 {[...r.instruments, ...r.genres].join(" · ")}
               </p>
             )}
-          </li>
+          </motion.li>
         ))}
         {!loading && results.length === 0 && (
           <li className="text-sm text-muted-foreground">No musicians match those filters yet.</li>

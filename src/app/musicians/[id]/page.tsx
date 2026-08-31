@@ -46,7 +46,7 @@ export default async function MusicianDetailPage({
     <div className="mx-auto max-w-2xl space-y-6 px-6 py-12">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{profile.displayName}</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{profile.displayName}</h1>
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             Verified
           </span>

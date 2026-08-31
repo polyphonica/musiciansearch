@@ -211,6 +211,17 @@ Rather than integrating a live geocoding API (Mapbox/OpenCage/LocationIQ were di
 
 **Provider comparison for later** (in case international coverage is needed before this gets replaced): Mapbox (100k free requests/month, no card required, $0.75/1k beyond) was the recommendation over OpenCage (2.5k/day free, cheaper at scale) and LocationIQ (5k/day free) — Google was ruled out as requiring a billing account even for its free tier, the same friction pattern hit with Twilio.
 
+## Design Pass: "Concert Program" Theme (2026-08-31)
+
+The app had shipped with shadcn's stock zero-chroma gray theme and default Geist fonts — despite `tech-stack.md` naming Tailwind/shadcn/Framer Motion as the stack back in Phase 2, no actual design work had happened. The user flagged it as "too small, not enough contrast and boring," which was accurate.
+
+- **Fonts:** Fraunces (display, variable SOFT/WONK/opsz axes) + Work Sans (body), via `next/font/google` in `src/app/layout.tsx`. `h1`-`h4` pick up Fraunces automatically via a `globals.css` base-layer rule.
+- **Palette:** warm parchment/oxblood/brass "concert program" theme (full light+dark values in `globals.css`), plus a subtle dot-grid background texture.
+- **Component scale increased at the primitive level** (`src/components/ui/button.tsx`, `input.tsx`, `textarea.tsx`) rather than per-usage — every button/input across the whole app got bigger from one change each.
+- **Motion:** staggered entrance animations (home page hero, search results list) and hover-lift interactions, replacing the single generic fade-in each page had.
+- **Real bug found:** `buttonVariants(...)` called directly (not wrapped in `cn()`) on a few `<Link>`s meant Tailwind's own stylesheet order, not className order, decided which of two conflicting classes won — silently making the "outline" button variant's border invisible regardless of what color was set. Fixed by always wrapping standalone `buttonVariants(...)` calls in `cn(...)`; `src/components/ui/button.tsx`'s own `Button` component already did this correctly, so it never showed there.
+- See `docs/tech-stack.md` for the original stack decision this design pass finally executed on.
+
 Not done yet (still ahead in Phase 3):
 - Messaging pages/API routes.
 - Broader/international geocoding coverage — current approach is UK+US only, MVP-scale, approximate (see above). A live geocoding API remains the natural upgrade path when that's needed, without changing the surrounding architecture (`resolvePostalCode`'s call sites wouldn't need to change, just its implementation).
