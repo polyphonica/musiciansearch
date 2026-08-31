@@ -19,6 +19,10 @@ export async function GET(request: Request) {
       reportedUser: {
         select: { id: true, email: true, status: true, profile: { select: { displayName: true } } },
       },
+      notes: {
+        orderBy: { createdAt: "asc" },
+        include: { admin: { select: { profile: { select: { displayName: true } }, email: true } } },
+      },
     },
   });
 
@@ -41,6 +45,12 @@ export async function GET(request: Request) {
         status: r.reportedUser.status,
       },
       reportedMessageBody: r.reportedMessageId ? (messageById.get(r.reportedMessageId) ?? null) : null,
+      notes: r.notes.map((n) => ({
+        id: n.id,
+        note: n.note,
+        createdAt: n.createdAt,
+        adminName: n.admin.profile?.displayName ?? n.admin.email,
+      })),
     })),
   });
 }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+type Note = { id: string; note: string; createdAt: string; adminName: string };
+
 type Report = {
   id: string;
   reason: string;
@@ -11,6 +13,7 @@ type Report = {
   reporter: { id: string; name: string };
   reportedUser: { id: string; name: string; status: "active" | "suspended" | "banned" };
   reportedMessageBody: string | null;
+  notes: Note[];
 };
 
 const STATUS_TABS = ["open", "reviewed", "actioned", "all"] as const;
@@ -20,6 +23,7 @@ export function ReportsList() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
   function load() {
     const query = tab === "all" ? "" : `?status=${tab}`;
@@ -38,31 +42,43 @@ export function ReportsList() {
 
   async function setReportStatus(id: string, status: Report["status"]) {
     setError(null);
+    const note = noteDrafts[id]?.trim() || undefined;
     const res = await fetch(`/api/admin/reports/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, note }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Couldn't update that report.");
       return;
     }
+    setNoteDrafts((prev) => ({ ...prev, [id]: "" }));
     load();
   }
 
-  async function setUserStatus(userId: string, status: "active" | "suspended" | "banned") {
+  async function setUserStatus(
+    reportId: string,
+    userId: string,
+    status: "active" | "suspended" | "banned"
+  ) {
     setError(null);
+    const reason = noteDrafts[reportId]?.trim() || "";
+    if ((status === "suspended" || status === "banned") && !reason) {
+      setError("Add a note explaining the reason before suspending or banning this account.");
+      return;
+    }
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reason: reason || undefined, reportId }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Couldn't update that account.");
       return;
     }
+    setNoteDrafts((prev) => ({ ...prev, [reportId]: "" }));
     load();
   }
 
@@ -110,6 +126,28 @@ export function ReportsList() {
                   Reported message: “{r.reportedMessageBody}”
                 </p>
               )}
+
+              {r.notes.length > 0 && (
+                <ul className="space-y-1 rounded-lg border bg-muted/30 p-2">
+                  {r.notes.map((n) => (
+                    <li key={n.id} className="text-sm text-foreground">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(n.createdAt).toLocaleString()} · {n.adminName}:
+                      </span>{" "}
+                      {n.note}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <textarea
+                value={noteDrafts[r.id] ?? ""}
+                onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                placeholder="Add a note (required to suspend/ban — recorded against this report)"
+                rows={2}
+                className="w-full rounded-lg border bg-background p-2 text-sm"
+              />
+
               <div className="flex flex-wrap gap-2 pt-1">
                 {r.status !== "open" && (
                   <Button size="sm" variant="outline" onClick={() => setReportStatus(r.id, "open")}>
@@ -128,20 +166,24 @@ export function ReportsList() {
                 )}
                 {r.reportedUser.status === "active" ? (
                   <>
-                    <Button size="sm" onClick={() => setUserStatus(r.reportedUser.id, "suspended")}>
+                    <Button size="sm" onClick={() => setUserStatus(r.id, r.reportedUser.id, "suspended")}>
                       Suspend account
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       className="border-destructive/40 text-destructive"
-                      onClick={() => setUserStatus(r.reportedUser.id, "banned")}
+                      onClick={() => setUserStatus(r.id, r.reportedUser.id, "banned")}
                     >
                       Ban account
                     </Button>
                   </>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => setUserStatus(r.reportedUser.id, "active")}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setUserStatus(r.id, r.reportedUser.id, "active")}
+                  >
                     Reactivate account
                   </Button>
                 )}

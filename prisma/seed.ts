@@ -246,6 +246,21 @@ async function main() {
     data: POSTAL_CODES,
     skipDuplicates: true,
   });
+
+  // System account used to send moderation notifications (see
+  // src/lib/system-messages.ts). Left unverified/no-profile-fields so it
+  // can never appear in search or messaging results as a normal user.
+  await prisma.user.upsert({
+    where: { email: "system@musiciansearch.internal" },
+    update: {},
+    create: {
+      email: "system@musiciansearch.internal",
+      phone: "+10000000000",
+      isAdmin: false,
+      profile: { create: { displayName: "MusicianSearch Team" } },
+    },
+  });
+
   console.log(
     `Seeded ${INSTRUMENTS.length} instruments, ${GENRES.length} genres, ${VOICE_TYPES.length} voice types, ${LOOKING_FOR_OPTIONS.length} looking-for options, ${POSTAL_CODES.length} postal code areas (existing rows left untouched).`
   );

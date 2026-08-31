@@ -55,6 +55,7 @@ model User {
   conversations         ConversationParticipant[]
   reportsFiled          Report[]               @relation("ReportsFiled")
   reportsReceived       Report[]               @relation("ReportsReceived")
+  moderationNotesWritten ModerationNote[]      @relation("ModerationNotesWritten")
   disclaimerAcceptances DisclaimerAcceptance[]
 
   @@map("users")
@@ -231,8 +232,24 @@ model Report {
   reason           String
   status           ReportStatus @default(open)
   createdAt        DateTime     @default(now()) @map("created_at")
+  // Set the first time the report leaves `open`, so the reporter's
+  // acknowledgment message is sent once, not on every later transition.
+  reporterNotifiedAt DateTime?  @map("reporter_notified_at")
+  notes            ModerationNote[]
 
   @@map("reports")
+}
+
+model ModerationNote {
+  id        String   @id @default(uuid())
+  reportId  String   @map("report_id")
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  adminId   String   @map("admin_id")
+  admin     User     @relation("ModerationNotesWritten", fields: [adminId], references: [id], onDelete: Cascade)
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("moderation_notes")
 }
 
 model DisclaimerAcceptance {
