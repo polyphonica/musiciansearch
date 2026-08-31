@@ -33,7 +33,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
+    <div className="flex flex-1 items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -41,9 +41,10 @@ export default function SignupPage() {
         className="w-full max-w-sm space-y-6"
       >
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Create your account</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Sign in or sign up</h1>
           <p className="text-sm text-muted-foreground">
-            We&apos;ll text you a code to verify your phone number. Your contact
+            Already have an account? Just enter the same phone number below to
+            sign back in. We&apos;ll text you a code to verify it — your contact
             details are never shown to other musicians.
           </p>
         </div>

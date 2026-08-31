@@ -21,7 +21,7 @@ export default function Home() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="flex min-h-screen flex-col items-center justify-center gap-7 bg-background px-6 text-center"
+      className="flex flex-1 flex-col items-center justify-center gap-7 bg-background px-6 text-center"
     >
       <motion.span
         variants={item}
