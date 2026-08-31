@@ -38,6 +38,12 @@ export function NavBar({ user }: { user: { isAdmin: boolean } | null }) {
             {user ? (
               <>
                 <Link
+                  href="/messages"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  Messages
+                </Link>
+                <Link
                   href="/profile"
                   className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                 >

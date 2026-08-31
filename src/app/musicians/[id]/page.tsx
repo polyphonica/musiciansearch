@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { canMessage, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { MessageComposer } from "./message-composer";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -44,6 +49,7 @@ export default async function MusicianDetailPage({
     where: { id },
     select: {
       id: true,
+      userId: true,
       displayName: true,
       bio: true,
       qualifications: true,
@@ -63,6 +69,9 @@ export default async function MusicianDetailPage({
   if (!profile || !profile.user.identityVerifiedAt || profile.user.status !== "active") {
     notFound();
   }
+
+  const viewer = await getCurrentUser();
+  const isOwnProfile = viewer?.id === profile.userId;
 
   const availabilityByDay = profile.availability.reduce<Record<number, string[]>>((acc, slot) => {
     (acc[slot.dayOfWeek] ??= []).push(slot.timeOfDay);
@@ -192,8 +201,24 @@ export default async function MusicianDetailPage({
         )}
       </div>
 
+      {!isOwnProfile && (
+        <div className="space-y-3">
+          {!viewer && (
+            <Link href="/signup" className={cn(buttonVariants({ size: "lg" }))}>
+              Sign in to message {profile.displayName}
+            </Link>
+          )}
+          {viewer && !canMessage(viewer) && (
+            <Link href="/verify-identity" className={cn(buttonVariants({ size: "lg" }))}>
+              Complete identity verification to message {profile.displayName}
+            </Link>
+          )}
+          {viewer && canMessage(viewer) && <MessageComposer profileId={profile.id} />}
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground">
-        Contact details are never shown on profiles. In-app messaging is coming soon.
+        Contact details are never shown on profiles — arrange to meet only through messages here.
       </p>
     </div>
   );

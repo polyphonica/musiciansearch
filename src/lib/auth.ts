@@ -16,6 +16,11 @@ export async function hasAcceptedCurrentDisclaimer(userId: string) {
   return acceptance !== null;
 }
 
+/** Messaging (starting or sending) requires identity verification, same as appearing in search. */
+export function canMessage(user: { identityVerifiedAt: Date | null } | null): boolean {
+  return user !== null && user.identityVerifiedAt !== null;
+}
+
 export async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user || !user.isAdmin) return null;
