@@ -111,6 +111,11 @@ export function ReportsList() {
                 </p>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
+                {r.status !== "open" && (
+                  <Button size="sm" variant="outline" onClick={() => setReportStatus(r.id, "open")}>
+                    Reopen
+                  </Button>
+                )}
                 {r.status !== "reviewed" && (
                   <Button size="sm" variant="outline" onClick={() => setReportStatus(r.id, "reviewed")}>
                     Mark reviewed
