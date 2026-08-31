@@ -17,12 +17,16 @@ export default function Home() {
       </motion.h1>
       <p className="max-w-md text-muted-foreground">
         Find musicians to play with — bandmates, accompanists, and jam
-        partners. Search and messaging land after signup/verification; this
-        is the first working slice of the MVP.
+        partners. Messaging lands next; search is live now.
       </p>
-      <Link href="/signup" className={buttonVariants({})}>
-        Get started
-      </Link>
+      <div className="flex gap-3">
+        <Link href="/signup" className={buttonVariants({})}>
+          Get started
+        </Link>
+        <Link href="/musicians" className={buttonVariants({ variant: "outline" })}>
+          Browse musicians
+        </Link>
+      </div>
     </div>
   );
 }
