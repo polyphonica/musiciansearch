@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { resolvePostalCode } from "@/lib/geo";
 import { prisma } from "@/lib/prisma";
 import { SkillLevel } from "@/generated/prisma/enums";
 
 const PAGE_SIZE = 20;
 const SKILL_LEVELS = Object.values(SkillLevel);
+const MILES_TO_METERS = 1609.34;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -19,6 +21,24 @@ export async function GET(request: Request) {
   const q = url.searchParams.get("q")?.trim() || undefined;
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
 
+  const near = url.searchParams.get("near")?.trim() || undefined;
+  const radiusMiles = Math.min(500, Math.max(1, Number(url.searchParams.get("radiusMiles")) || 25));
+
+  let nearResolved: boolean | null = null;
+  let nearProfileIds: string[] | null = null;
+  if (near) {
+    const resolved = await resolvePostalCode(near);
+    nearResolved = resolved !== null;
+    if (resolved) {
+      const rows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM profiles
+        WHERE location IS NOT NULL
+          AND ST_DWithin(location, ST_SetSRID(ST_MakePoint(${resolved.lng}, ${resolved.lat}), 4326)::geography, ${radiusMiles * MILES_TO_METERS})
+      `;
+      nearProfileIds = rows.map((r) => r.id);
+    }
+  }
+
   const where = {
     user: { identityVerifiedAt: { not: null }, status: "active" as const },
     ...(instrumentId && { instruments: { some: { instrumentId } } }),
@@ -26,6 +46,7 @@ export async function GET(request: Request) {
     ...(voiceTypeId && { voiceTypes: { some: { voiceTypeId } } }),
     ...(lookingForOptionId && { lookingFor: { some: { lookingForOptionId } } }),
     ...(skillLevel && { skillLevel }),
+    ...(nearProfileIds && { id: { in: nearProfileIds } }),
     ...(q && {
       OR: [
         { displayName: { contains: q, mode: "insensitive" as const } },
@@ -71,5 +92,6 @@ export async function GET(request: Request) {
     pageSize: PAGE_SIZE,
     total,
     hasMore: page * PAGE_SIZE < total,
+    nearResolved,
   });
 }

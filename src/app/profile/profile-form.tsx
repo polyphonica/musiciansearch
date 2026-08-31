@@ -40,6 +40,7 @@ export function ProfileForm() {
   const [bio, setBio] = useState("");
   const [qualifications, setQualifications] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
   const [lookingForOptionIds, setLookingForOptionIds] = useState<Set<string>>(new Set());
   const [lookingForOther, setLookingForOther] = useState("");
@@ -52,6 +53,7 @@ export function ProfileForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -72,6 +74,7 @@ export function ProfileForm() {
         setBio(profile.bio ?? "");
         setQualifications(profile.qualifications ?? "");
         setLocationLabel(profile.locationLabel ?? "");
+        setPostalCode(profile.postalCode ?? "");
         setSkillLevel(profile.skillLevel ?? "");
         setLookingForOther(profile.lookingForOther ?? "");
         setInstrumentIds(new Set(profile.instruments.map((i: { instrumentId: string }) => i.instrumentId)));
@@ -109,6 +112,7 @@ export function ProfileForm() {
         bio,
         qualifications,
         locationLabel,
+        postalCode,
         skillLevel: skillLevel || null,
         lookingForOptionIds: Array.from(lookingForOptionIds),
         lookingForOther: isOther ? lookingForOther : "",
@@ -123,12 +127,17 @@ export function ProfileForm() {
     });
 
     setSaving(false);
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Something went wrong. Please try again.");
       return;
     }
     setSaved(true);
+    setLocationNote(
+      data.locationResolved === false
+        ? `We couldn't pinpoint "${postalCode}" — your profile is saved, but won't appear in distance-based search until this is corrected.`
+        : null
+    );
   }
 
   if (loading) {
@@ -162,6 +171,19 @@ export function ProfileForm() {
             onChange={(e) => setLocationLabel(e.target.value)}
             placeholder="e.g. Brooklyn, NY — city/region only, never an exact address"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="postalCode">Postal / ZIP code (UK or US)</Label>
+          <Input
+            id="postalCode"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="e.g. SW1A or 10001"
+          />
+          <p className="text-xs text-muted-foreground">
+            Never shown publicly — used only to let others search for musicians near a
+            given area. Only UK and US codes are supported for now.
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="bio">Biography</Label>
@@ -308,6 +330,7 @@ export function ProfileForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {saved && <p className="text-sm text-primary">Profile saved.</p>}
+      {locationNote && <p className="text-sm text-muted-foreground">{locationNote}</p>}
       <Button type="submit" disabled={saving}>
         {saving ? "Saving…" : "Save profile"}
       </Button>

@@ -10,9 +10,20 @@ export default async function MusicianDetailPage({
 }) {
   const { id } = await params;
 
+  // Explicit `select` (not `include`) so a sensitive-but-not-yet-added field
+  // can never accidentally end up here just by existing on the model —
+  // postalCode in particular must never reach this public page.
   const profile = await prisma.profile.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      displayName: true,
+      bio: true,
+      qualifications: true,
+      locationLabel: true,
+      skillLevel: true,
+      lookingForOther: true,
+      externalLinks: true,
       user: { select: { identityVerifiedAt: true, status: true } },
       instruments: { include: { instrument: true } },
       genres: { include: { genre: true } },

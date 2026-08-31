@@ -23,6 +23,13 @@ const SKILL_LEVELS = [
   { value: "professional", label: "Professional" },
 ];
 
+const RADIUS_OPTIONS = [
+  { value: "10", label: "10 miles" },
+  { value: "25", label: "25 miles" },
+  { value: "50", label: "50 miles" },
+  { value: "100", label: "100 miles" },
+];
+
 function SelectField({
   label,
   value,
@@ -65,11 +72,14 @@ export function MusicianSearch() {
   const [voiceTypeId, setVoiceTypeId] = useState("");
   const [lookingForOptionId, setLookingForOptionId] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
+  const [near, setNear] = useState("");
+  const [radiusMiles, setRadiusMiles] = useState("25");
 
   const [results, setResults] = useState<Result[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [nearResolved, setNearResolved] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,6 +104,10 @@ export function MusicianSearch() {
     if (voiceTypeId) params.set("voiceTypeId", voiceTypeId);
     if (lookingForOptionId) params.set("lookingForOptionId", lookingForOptionId);
     if (skillLevel) params.set("skillLevel", skillLevel);
+    if (near) {
+      params.set("near", near);
+      params.set("radiusMiles", radiusMiles);
+    }
     params.set("page", String(nextPage));
 
     fetch(`/api/musicians?${params.toString()}`)
@@ -102,6 +116,7 @@ export function MusicianSearch() {
         setResults((prev) => (nextPage === 1 ? data.results : [...prev, ...data.results]));
         setHasMore(data.hasMore);
         setTotal(data.total);
+        setNearResolved(data.nearResolved);
         setPage(nextPage);
         setLoading(false);
       });
@@ -110,7 +125,7 @@ export function MusicianSearch() {
   useEffect(() => {
     runSearch(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, instrumentId, genreId, voiceTypeId, lookingForOptionId, skillLevel]);
+  }, [q, instrumentId, genreId, voiceTypeId, lookingForOptionId, skillLevel, near, radiusMiles]);
 
   return (
     <div className="space-y-6">
@@ -120,6 +135,39 @@ export function MusicianSearch() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name or bio…"
         />
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground">Near (UK/US postal or ZIP code)</span>
+            <Input
+              value={near}
+              onChange={(e) => setNear(e.target.value)}
+              placeholder="e.g. SW1A or 10001"
+              className="h-8 w-48"
+            />
+          </label>
+          {near && (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">Within</span>
+              <select
+                value={radiusMiles}
+                onChange={(e) => setRadiusMiles(e.target.value)}
+                className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
+              >
+                {RADIUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+        {near && nearResolved === false && (
+          <p className="text-sm text-muted-foreground">
+            Couldn&apos;t recognize &quot;{near}&quot; as a UK or US postal code — showing all
+            results instead.
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <SelectField
             label="Instrument"

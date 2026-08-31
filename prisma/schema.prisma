@@ -69,6 +69,9 @@ model Profile {
   qualifications String? @map("qualifications")
   location     Unsupported("geography(Point, 4326)")?
   locationLabel String? @map("location_label")
+  // Raw postal/ZIP code, used only server-side to resolve `location` via
+  // PostalCodeLocation — never returned from public profile/search endpoints.
+  postalCode   String?  @map("postal_code")
   skillLevel   SkillLevel? @map("skill_level")
   lookingForOther String? @map("looking_for_other")
   avatarUrl    String?  @map("avatar_url")
@@ -84,6 +87,21 @@ model Profile {
   availability AvailabilitySlot[]
 
   @@map("profiles")
+}
+
+// Static lookup table for approximate postal-code-district-level coordinates
+// (UK outward code / US ZIP), used for radius search without a live geocoding
+// API. Seeded in prisma/seed.ts with a hand-curated starter set of major UK/US
+// areas -- see docs/technical-design.md for coverage caveats.
+model PostalCodeLocation {
+  id      String @id @default(uuid())
+  country String // "GB" | "US"
+  code    String // UK outward code (e.g. "SW1A") or US 5-digit ZIP
+  lat     Float
+  lng     Float
+
+  @@unique([country, code])
+  @@map("postal_code_locations")
 }
 
 model Instrument {

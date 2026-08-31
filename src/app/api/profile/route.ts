@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { resolvePostalCode } from "@/lib/geo";
 import { prisma } from "@/lib/prisma";
 import { SkillLevel } from "@/generated/prisma/enums";
 
@@ -49,6 +50,9 @@ export async function POST(request: Request) {
     typeof body.qualifications === "string" ? body.qualifications.slice(0, 2000) : null;
   const locationLabel =
     typeof body.locationLabel === "string" ? body.locationLabel.slice(0, 200) : null;
+  const postalCode =
+    typeof body.postalCode === "string" ? body.postalCode.trim().slice(0, 20) || null : null;
+  const resolvedLocation = postalCode ? await resolvePostalCode(postalCode) : null;
 
   const skillLevel =
     typeof body.skillLevel === "string" && SKILL_LEVELS.includes(body.skillLevel as SkillLevel)
@@ -78,9 +82,18 @@ export async function POST(request: Request) {
     profile = await prisma.$transaction(async (tx) => {
     const profile = await tx.profile.upsert({
       where: { userId: user.id },
-      create: { userId: user.id, displayName, bio, qualifications, locationLabel, skillLevel, lookingForOther },
-      update: { displayName, bio, qualifications, locationLabel, skillLevel, lookingForOther },
+      create: { userId: user.id, displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther },
+      update: { displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther },
     });
+
+    // `location` is an Unsupported PostGIS type — Prisma can't write it via
+    // the normal data object, so it's set with a raw query in the same
+    // transaction as everything else.
+    if (resolvedLocation) {
+      await tx.$executeRaw`UPDATE profiles SET location = ST_SetSRID(ST_MakePoint(${resolvedLocation.lng}, ${resolvedLocation.lat}), 4326)::geography WHERE id = ${profile.id}`;
+    } else {
+      await tx.$executeRaw`UPDATE profiles SET location = NULL WHERE id = ${profile.id}`;
+    }
 
     await tx.profileInstrument.deleteMany({ where: { profileId: profile.id } });
     if (instrumentIds.length > 0) {
@@ -135,5 +148,9 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, profile });
+  return NextResponse.json({
+    ok: true,
+    profile,
+    locationResolved: postalCode ? resolvedLocation !== null : null,
+  });
 }

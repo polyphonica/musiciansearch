@@ -39,9 +39,9 @@ It is explicitly **not** a marketplace for paid gigs (v1) and explicitly **not**
 
 ### Search & Discovery
 - Filter/search by instrument, genre, skill level, location radius, availability (e.g. weekends, evenings), and "looking for" type (band member, accompanist, jam partner).
-- Location-radius (geo) search is a core requirement — needs geospatial query support (PostGIS) rather than naive city-string matching.
+- Location-radius (geo) search is a core requirement — implemented via PostGIS, resolving a private postal/ZIP code (never shown publicly) to approximate coordinates rather than requiring a precise address. See `tech-stack.md` for the current UK/US-only MVP approach and its coverage limits.
 - Full-text/fuzzy search across bio and instrument/genre tags for flexible discovery.
-- Free tier: basic filtering, capped number of results or profile views per period. Paid tier: advanced filters, unlimited browsing, visibility boost in others' search results.
+- Free tier: basic filtering, capped number of results or profile views per period. Paid tier: advanced filters, unlimited browsing, visibility boost in others' search results. **Not yet enforced** — deferred until Stripe Billing is actually wired up.
 
 ### In-App Communication
 - All communication happens through an in-app messaging system. Personal contact info is never auto-revealed; exchanging it to meet is a deliberate action users take themselves inside a conversation — the platform never auto-suggests or embeds contact-info fields in chat.
