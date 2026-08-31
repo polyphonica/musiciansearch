@@ -15,3 +15,18 @@ export async function hasAcceptedCurrentDisclaimer(userId: string) {
   });
   return acceptance !== null;
 }
+
+export async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user || !user.isAdmin) return null;
+  return user;
+}
+
+/** Phone numbers listed in ADMIN_PHONE_NUMBERS (comma-separated, E.164) are granted admin on signup. */
+export function isConfiguredAdminPhone(phone: string): boolean {
+  const list = (process.env.ADMIN_PHONE_NUMBERS ?? "")
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return list.includes(phone);
+}

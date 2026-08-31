@@ -25,9 +25,16 @@ It is explicitly **not** a marketplace for paid gigs (v1) and explicitly **not**
 ## Core Feature Requirements
 
 ### Profiles
-- Display name (not necessarily legal name), instrument(s)/voice, genres, skill level/experience, general location (city/region-level only, never precise address), availability, bio, audio/video samples (optional), links to external portfolios.
-- **No personal contact details (phone, email, address) ever shown on a profile or in search results.** All contact happens through in-app messaging.
+- Display name (not necessarily legal name), biography (free text), qualifications/experience (free text, e.g. grade exams/diplomas/degrees — deliberately unstructured for v1 rather than a filterable field), general location (city/region-level only, never precise address), skill level, "looking for" type(s), availability (day-of-week × time-of-day, general only — no exact calendar), audio/video sample links, external portfolio links.
+- **Instruments and voice are separate taxonomies, not one list**, since voice *type* (soprano/alto/tenor/bass etc.) matters for ensemble formation in a way arbitrary instrument choice doesn't. A profile selects one or more instruments (including "Voice" as one of them) from an admin-editable list, plus — only relevant when "Voice" is selected — one or more voice types from a separate admin-editable list. A musician can be multi-instrumental and/or a singer; all multi-select.
+- **Genres are a flat, multi-select tag list**, not a hierarchy — eras like "Baroque" and "Early Music" genuinely overlap, so a strict tree would misrepresent how musicians self-describe. List is admin-editable (see Admin section below).
+- **No personal contact details (phone, email, address) ever shown on a profile or in search results.** All contact happens through in-app messaging. This is structurally enforced, not just a UI choice: contact info lives only on the `User` table, never on `Profile`, so a public-profile view that only ever serializes `Profile` fields cannot leak it.
 - A visible "Verified" badge tied to identity verification, so users can trust who they're talking to without seeing personal info.
+- Availability **is** shown publicly (decided 2026-08-31) — it's core to matching ("looking for a Sunday afternoon quartet") and reveals only a general weekly pattern, not an exact schedule or real-time location.
+
+### Admin: Editable Reference Lists
+- Instruments, genres, and voice types are **admin-editable at runtime**, not hardcoded — added, renamed, or removed via an admin interface rather than requiring a code change/deploy. A small `isAdmin` flag on `User` gates this; there's no broader roles/permissions system since only this one need exists so far.
+- These lists are seeded with a starting set (see `tech-stack.md`) but are expected to be refined by the operator over time, particularly the genre and early-music-specific instrument lists.
 
 ### Search & Discovery
 - Filter/search by instrument, genre, skill level, location radius, availability (e.g. weekends, evenings), and "looking for" type (band member, accompanist, jam partner).

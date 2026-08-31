@@ -53,6 +53,7 @@ model User {
   stripeCustomerId     String?   @map("stripe_customer_id")
   stripeSubscriptionId String?   @map("stripe_subscription_id")
   status               UserStatus @default(active)
+  isAdmin              Boolean   @default(false) @map("is_admin")
   createdAt            DateTime  @default(now()) @map("created_at")
 
   profile               Profile?
@@ -71,6 +72,7 @@ model Profile {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   displayName  String   @map("display_name")
   bio          String?
+  qualifications String? @map("qualifications")
   location     Unsupported("geography(Point, 4326)")?
   locationLabel String? @map("location_label")
   skillLevel   SkillLevel? @map("skill_level")
@@ -83,6 +85,7 @@ model Profile {
 
   instruments  ProfileInstrument[]
   genres       ProfileGenre[]
+  voiceTypes   ProfileVoiceType[]
   availability AvailabilitySlot[]
 
   @@map("profiles")
@@ -104,6 +107,14 @@ model Genre {
   @@map("genres")
 }
 
+model VoiceType {
+  id       String   @id @default(uuid())
+  name     String   @unique
+  profiles ProfileVoiceType[]
+
+  @@map("voice_types")
+}
+
 model ProfileInstrument {
   profileId    String @map("profile_id")
   instrumentId String @map("instrument_id")
@@ -122,6 +133,16 @@ model ProfileGenre {
 
   @@id([profileId, genreId])
   @@map("profile_genres")
+}
+
+model ProfileVoiceType {
+  profileId   String @map("profile_id")
+  voiceTypeId String @map("voice_type_id")
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  voiceType   VoiceType @relation(fields: [voiceTypeId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, voiceTypeId])
+  @@map("profile_voice_types")
 }
 
 model AvailabilitySlot {

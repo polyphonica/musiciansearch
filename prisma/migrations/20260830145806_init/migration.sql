@@ -1,3 +1,6 @@
+-- Required for the `geography(Point, 4326)` column on profiles.location
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 -- CreateEnum
 CREATE TYPE "SubscriptionTier" AS ENUM ('free', 'paid');
 

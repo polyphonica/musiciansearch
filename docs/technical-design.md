@@ -143,7 +143,36 @@ Twilio requires upgrading off the free trial (adding a payment method) before pr
 
 Both `.env` credentials that ARE configured now: `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` (from the user's real Twilio account). `TWILIO_VERIFY_SERVICE_SID` is still blank — a Verify Service couldn't be provisioned without upgrading off trial, which is deferred per the mock above.
 
+## Phase 3 Progress: Profile Creation + Admin-Editable Reference Lists (2026-08-31)
+
+**Schema changes** (migration `20260831084428_add_admin_qualifications_voice_types`, applied after a `prisma migrate reset` needed to fix a real gap — see below):
+- `User.isAdmin` (boolean, default false) — the only role distinction in the system so far.
+- `Profile.qualifications` (free text, separate from `bio`) — bio is general "about me," qualifications is credentials/experience (ABRSM grades, diplomas, degrees). Deliberately free text, not structured, since it's a trust signal rather than a primary search filter.
+- `VoiceType` + `ProfileVoiceType` — mirrors the existing `Instrument`/`Genre` reference-table pattern exactly, rather than a hardcoded enum, specifically so it's admin-editable (see below). "Voice" is also just one entry in the `Instrument` list, so vocalists appear in general instrument search too; voice type is a second, separate multi-select shown only when "Voice" is selected.
+
+**Fixed a real migration bug found along the way:** the original `init` migration never contained `CREATE EXTENSION postgis` — PostGIS had only been enabled manually via a one-off `psql` command outside migration history. This meant replaying migrations from scratch (which `prisma migrate dev`'s shadow-database step does every time, and which a fresh production deploy would also do) failed with `type "geography" does not exist`. Fixed by adding `CREATE EXTENSION IF NOT EXISTS postgis;` to the top of the init migration file and running `prisma migrate reset` (local dev DB only, explicitly confirmed with the user first since Prisma's own CLI safety check — and this session's tool permissions — both required it; the user ran the reset command directly since the harness's own classifier blocked running it as an agent action even with consent).
+
+**Admin bootstrap:** `ADMIN_PHONE_NUMBERS` in `.env` (comma-separated E.164 numbers) — checked in `POST /api/auth/signup`; a matching phone gets `isAdmin: true` on signup/upsert. `src/lib/auth.ts`'s `requireAdmin()` gates admin routes/pages.
+
+**Admin CRUD** (`src/lib/taxonomy.ts` — one shared generic implementation, since instruments/genres/voice-types are structurally identical, wired to three thin `route.ts` files each):
+- `GET /api/admin/{instruments,genres,voice-types}` — public, no auth required (harmless reference data, and the profile form needs to read these as any logged-in user).
+- `POST` (create) / `PATCH .../[id]` (rename) / `DELETE .../[id]` — all require `requireAdmin()`, return 403 otherwise.
+- `/admin` page (`notFound()` for non-admins, not just a redirect, to avoid revealing the page exists) with a reusable `<TaxonomyEditor>` client component per list — list, inline-rename-on-blur, add, remove.
+- Verified end-to-end via curl with separate admin and non-admin test sessions: admin can create/rename/delete, non-admin gets 403, `/admin` page is 404 for both non-admins and unauthenticated requests.
+
+**Profile creation** (`GET`/`POST /api/profile`, `/profile` page):
+- Gated on having a session only (any phone-verified user) — per `requirements.md`, profile creation itself doesn't require full identity verification or disclaimer acceptance, only search-appearance and messaging will (once those are built).
+- `POST /api/profile` is a single Prisma `$transaction`: upserts the scalar `Profile` fields, then `deleteMany`+`createMany` on each join table (instruments, genres, voice types) and on `AvailabilitySlot` to sync the full multi-select state in one request, rather than diffing.
+- The form fetches its reference lists from the already-public `/api/admin/*` GET endpoints (reusing them rather than duplicating), plus the user's existing profile from `GET /api/profile` to prefill on edit.
+- Voice-type checkboxes only render (client-side) when "Voice" is among the selected instruments, matching the requirements-doc design.
+- Availability is a 7-day × 3-time-of-day checkbox grid, stored as rows in `AvailabilitySlot`.
+- Verified end-to-end via curl: signed up a test user (mock OTP), fetched real instrument/genre/voice-type ids from the seeded lists, POSTed a full profile (multi-instrument incl. Voice, one voice type, one genre, two availability slots), and confirmed `GET /api/profile` round-trips everything correctly. Also confirmed the `/profile` page itself redirects unauthenticated visitors to `/signup` (307) and renders (200) for a logged-in user.
+
+**Implementation note (ESLint):** `eslint-plugin-react-hooks` 7.x's `set-state-in-effect` rule flags calling a named async function (that internally calls `setState`) from inside a `useEffect` body, even fire-and-forget — a stricter check than earlier versions. Fetch-on-mount effects in this codebase use a `.then()` promise chain directly in the effect body instead of an intermediate async function, which the rule accepts (see `src/app/admin/taxonomy-editor.tsx` and `src/app/profile/profile-form.tsx`).
+
 Not done yet (still ahead in Phase 3):
-- Search, messaging, and profile creation/editing pages and API routes.
-- Route-level gating middleware (currently each protected API route checks the session itself; no redirect-based page gating yet, e.g. visiting `/verify-identity` directly without a session doesn't redirect to `/signup`).
+- Search and messaging pages/API routes (profile creation now exists; search needs real geocoding for `Profile.location`, still deferred per the open item below).
+- Public profile view (everything built so far is "manage your own profile" — no `/musicians/[id]` public page yet, and no listing of other users' profiles).
+- Geocoding for `Profile.locationLabel` → `Profile.location` (PostGIS point) — currently `locationLabel` is a free-text string with no real coordinates behind it, so radius search won't work until a geocoding provider is chosen (a decision similar in kind to the Stripe/Twilio ones — cost/vendor tradeoffs the user should weigh in on, not yet asked).
+- Route-level gating middleware beyond what's been added ad hoc (`/profile` and `/admin` now redirect/404 appropriately; other pages like `/verify-identity` still don't redirect unauthenticated visitors).
 - Real Twilio Verify Service and real Stripe Identity/Billing keys — both currently mocked (see above). The full flow has only been tested through the mocks, never through a real SMS or a real Stripe-hosted verification page.

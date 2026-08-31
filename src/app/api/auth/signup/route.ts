@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isConfiguredAdminPhone } from "@/lib/auth";
 import { isMockOtpEnabled, MOCK_OTP_CODE } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { twilioClient, TWILIO_VERIFY_SERVICE_SID } from "@/lib/twilio";
@@ -16,11 +17,13 @@ export async function POST(request: Request) {
     );
   }
 
+  const isAdmin = isConfiguredAdminPhone(phone);
+
   try {
     await prisma.user.upsert({
       where: { phone },
-      update: { email },
-      create: { email, phone },
+      update: { email, ...(isAdmin ? { isAdmin: true } : {}) },
+      create: { email, phone, isAdmin },
     });
   } catch {
     return NextResponse.json(
