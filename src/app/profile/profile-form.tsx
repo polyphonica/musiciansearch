@@ -211,7 +211,7 @@ export function ProfileForm() {
             id="skillLevel"
             value={skillLevel}
             onChange={(e) => setSkillLevel(e.target.value)}
-            className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
+            className="h-11 w-full rounded-lg border-2 border-input bg-teal/5 px-3.5 text-base focus:outline-none focus:ring-3 focus:ring-teal/30"
           >
             <option value="">Not specified</option>
             {SKILL_LEVELS.map((s) => (

@@ -48,7 +48,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
+        className="h-11 rounded-lg border-2 border-input bg-teal/5 px-3.5 text-base focus:outline-none focus:ring-3 focus:ring-teal/30"
       >
         <option value="">Any</option>
         {options.map((o) => (
@@ -143,7 +143,7 @@ export function MusicianSearch() {
               value={near}
               onChange={(e) => setNear(e.target.value)}
               placeholder="e.g. SW1A or 10001"
-              className="h-8 w-48"
+              className="w-48"
             />
           </label>
           {near && (
@@ -152,7 +152,7 @@ export function MusicianSearch() {
               <select
                 value={radiusMiles}
                 onChange={(e) => setRadiusMiles(e.target.value)}
-                className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
+                className="h-11 rounded-lg border-2 border-input bg-teal/5 px-3.5 text-base focus:outline-none focus:ring-3 focus:ring-teal/30"
               >
                 {RADIUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>

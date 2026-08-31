@@ -39,6 +39,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-teal: var(--teal);
+  --color-teal-foreground: var(--teal-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,75 +50,80 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* "Concert program" — warm ink & oxblood on parchment. A nod to printed
-   recital programs and sheet-music covers rather than generic SaaS gray. */
+/* "Concert poster" — warm parchment ground with bold, saturated ink:
+   vivid crimson, teal, and gold, like screen-printed gig posters rather
+   than a muted programme booklet. */
 :root {
-  --background: #faf3e7;
-  --foreground: #2b211b;
-  --card: #fffdf8;
-  --card-foreground: #2b211b;
-  --popover: #fffdf8;
-  --popover-foreground: #2b211b;
-  --primary: #7a2231;
-  --primary-foreground: #faf3e7;
-  --secondary: #f1e7d6;
-  --secondary-foreground: #2b211b;
-  --muted: #f1e7d6;
+  --background: #fcf4e7;
+  --foreground: #241a14;
+  --card: #fffdf9;
+  --card-foreground: #241a14;
+  --popover: #fffdf9;
+  --popover-foreground: #241a14;
+  --primary: #e63946;
+  --primary-foreground: #fff8ed;
+  --secondary: #cfeeea;
+  --secondary-foreground: #0b6e6e;
+  --muted: #f1e3c9;
   --muted-foreground: #6b5d4f;
-  --accent: #b08d57;
-  --accent-foreground: #2b211b;
-  --destructive: #b3261e;
-  --border: #d3bc95;
-  --input: #d3bc95;
-  --ring: #7a2231;
-  --chart-1: #7a2231;
-  --chart-2: #b08d57;
-  --chart-3: #4a6a5a;
+  --accent: #f4a300;
+  --accent-foreground: #241a14;
+  --teal: #0fa3a3;
+  --teal-foreground: #ffffff;
+  --destructive: #ff6b4a;
+  --border: #d9b98a;
+  --input: #0fa3a3;
+  --ring: #e63946;
+  --chart-1: #e63946;
+  --chart-2: #0fa3a3;
+  --chart-3: #f4a300;
   --chart-4: #6b5d4f;
-  --chart-5: #2b211b;
+  --chart-5: #241a14;
   --radius: 0.85rem;
-  --sidebar: #f1e7d6;
-  --sidebar-foreground: #2b211b;
-  --sidebar-primary: #7a2231;
-  --sidebar-primary-foreground: #faf3e7;
-  --sidebar-accent: #e3d5be;
-  --sidebar-accent-foreground: #2b211b;
-  --sidebar-border: #e3d5be;
-  --sidebar-ring: #7a2231;
+  --sidebar: #f1e3c9;
+  --sidebar-foreground: #241a14;
+  --sidebar-primary: #e63946;
+  --sidebar-primary-foreground: #fff8ed;
+  --sidebar-accent: #cfeeea;
+  --sidebar-accent-foreground: #0b6e6e;
+  --sidebar-border: #d9b98a;
+  --sidebar-ring: #e63946;
 }
 
 .dark {
-  --background: #1c1712;
-  --foreground: #f3e9d8;
-  --card: #26201a;
-  --card-foreground: #f3e9d8;
-  --popover: #26201a;
-  --popover-foreground: #f3e9d8;
-  --primary: #c1495a;
-  --primary-foreground: #1c1712;
-  --secondary: #2e2620;
-  --secondary-foreground: #f3e9d8;
+  --background: #1c1310;
+  --foreground: #fbf1e0;
+  --card: #271c17;
+  --card-foreground: #fbf1e0;
+  --popover: #271c17;
+  --popover-foreground: #fbf1e0;
+  --primary: #ff5a5f;
+  --primary-foreground: #1c1310;
+  --secondary: #123b3a;
+  --secondary-foreground: #7fe0d6;
   --muted: #2e2620;
-  --muted-foreground: #b8a98f;
-  --accent: #c9a567;
-  --accent-foreground: #1c1712;
-  --destructive: #e5484d;
-  --border: rgba(243, 233, 216, 0.14);
-  --input: rgba(243, 233, 216, 0.16);
-  --ring: #c1495a;
-  --chart-1: #c1495a;
-  --chart-2: #c9a567;
-  --chart-3: #7fa08e;
-  --chart-4: #b8a98f;
-  --chart-5: #f3e9d8;
-  --sidebar: #26201a;
-  --sidebar-foreground: #f3e9d8;
-  --sidebar-primary: #c1495a;
-  --sidebar-primary-foreground: #1c1712;
-  --sidebar-accent: #2e2620;
-  --sidebar-accent-foreground: #f3e9d8;
-  --sidebar-border: rgba(243, 233, 216, 0.14);
-  --sidebar-ring: #c1495a;
+  --muted-foreground: #c2b09a;
+  --accent: #ffc93c;
+  --accent-foreground: #1c1310;
+  --teal: #2dd4c8;
+  --teal-foreground: #0b1f1e;
+  --destructive: #ff7b5c;
+  --border: rgba(251, 241, 224, 0.18);
+  --input: #2dd4c8;
+  --ring: #ff5a5f;
+  --chart-1: #ff5a5f;
+  --chart-2: #2dd4c8;
+  --chart-3: #ffc93c;
+  --chart-4: #c2b09a;
+  --chart-5: #fbf1e0;
+  --sidebar: #271c17;
+  --sidebar-foreground: #fbf1e0;
+  --sidebar-primary: #ff5a5f;
+  --sidebar-primary-foreground: #1c1310;
+  --sidebar-accent: #123b3a;
+  --sidebar-accent-foreground: #7fe0d6;
+  --sidebar-border: rgba(251, 241, 224, 0.18);
+  --sidebar-ring: #ff5a5f;
 }
 
 @layer base {
