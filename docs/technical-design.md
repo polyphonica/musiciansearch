@@ -248,6 +248,20 @@ Built the full messaging system from `requirements.md`/Section 3 of this doc, wi
 - **`/messages`** (inbox) and **`/messages/[id]`** (thread, with the composer) pages, plus a `MessageComposer` embedded on `/musicians/[id]` that only renders for a verified, logged-in viewer looking at someone else's profile — anonymous visitors see "Sign in to message", logged-in-but-unverified users see "Complete identity verification to message", matching the access rules from the original nav discussion (anonymous/unverified can search and view, only verified users can message).
 - Verified end-to-end via curl (two fully-verified test accounts: start conversation → appears in both inboxes with correct unread count → recipient reads thread → read count clears → recipient replies → sender sees it) and via a real browser session (composer → send → redirect to thread → inbox shows the preview). Also verified the gates: anonymous request → 401, phone-verified-but-not-identity-verified → 403, messaging yourself → 400, a non-participant reading someone else's thread → 404 (not revealing that the conversation exists at all).
 
+## Bug Fix: Returning Verified Users Got Stuck on Re-login (2026-08-31)
+
+Reported by the user: signing in again (an existing, already-verified account) walked through OTP → disclaimer → identity-verification as if it were a first-time signup, and got stuck at `/verify-identity` showing "Start identity verification" with no way forward — clicking it just returned the existing "Identity already verified" error from `/api/identity/start`, going nowhere.
+
+**Root cause:** `/disclaimer` and `/verify-identity` were pure client components with no server-side check of whether the user had already completed that step — every login replayed the entire onboarding funnel regardless of actual account state. Confirmed via the affected account's own data: `identity_verified_at` was genuinely already set, and — a related bug — there were **7 duplicate `disclaimer_acceptances` rows**, because the accept endpoint had no idempotency guard and created a new row every time the page was revisited.
+
+**Fix:** both pages became server components with a redirect cascade, each one checking its own completion condition and skipping forward:
+- `/disclaimer`: redirects to `/signup` if not logged in, to `/verify-identity` if `hasAcceptedCurrentDisclaimer()` is already true, otherwise renders the form (moved to `disclaimer-form.tsx`).
+- `/verify-identity`: redirects to `/signup` if not logged in, to `/disclaimer` if the disclaimer isn't accepted yet, to `/profile` if `identityVerifiedAt` is already set, otherwise renders the form (moved to `verify-identity-form.tsx`).
+- `POST /api/disclaimer/accept` now checks `hasAcceptedCurrentDisclaimer()` before inserting, so it's idempotent — defense in depth for the (now much rarer) case where the endpoint is hit directly.
+- Cleaned up the 6 duplicate rows on the affected real account (harmless — identical version records, kept the earliest).
+
+Verified via curl: a fresh account taken through full verification, then a simulated "returning login" (fresh OTP cycle), correctly redirects `/disclaimer` → `/verify-identity` → `/profile` via 307s without ever showing either intermediate form; re-POSTing `/api/disclaimer/accept` for an already-accepted user no longer creates a duplicate row. Confirmed by the user against their own real account as well.
+
 Not done yet (still ahead in Phase 3):
 - Real-time delivery (Socket.io) — currently 4-second polling while a thread is open; see above.
 - Message pagination beyond the newest 200 per conversation, and a "typing…" indicator (both explicitly deferred alongside the Socket.io work, since they're naturally the same infra).

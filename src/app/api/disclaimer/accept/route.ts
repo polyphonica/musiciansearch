@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DISCLAIMER_VERSION, getCurrentUser } from "@/lib/auth";
+import { DISCLAIMER_VERSION, getCurrentUser, hasAcceptedCurrentDisclaimer } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST() {
@@ -8,9 +8,13 @@ export async function POST() {
     return NextResponse.json({ error: "Phone verification required first." }, { status: 401 });
   }
 
-  await prisma.disclaimerAcceptance.create({
-    data: { userId: user.id, disclaimerVersion: DISCLAIMER_VERSION },
-  });
+  // Idempotent: the /disclaimer page itself now skips forward for users who
+  // already accepted, but guard here too in case this is ever hit directly.
+  if (!(await hasAcceptedCurrentDisclaimer(user.id))) {
+    await prisma.disclaimerAcceptance.create({
+      data: { userId: user.id, disclaimerVersion: DISCLAIMER_VERSION },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
