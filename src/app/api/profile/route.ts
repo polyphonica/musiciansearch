@@ -62,6 +62,12 @@ export async function POST(request: Request) {
   const lookingForOther =
     typeof body.lookingForOther === "string" ? body.lookingForOther.slice(0, 500) : null;
 
+  const externalLinks = asStringArray(body.externalLinks)
+    .map((link) => link.trim())
+    .filter(Boolean)
+    .slice(0, 5)
+    .map((link) => (/^https?:\/\//i.test(link) ? link : `https://${link}`));
+
   const instrumentIds = asStringArray(body.instrumentIds);
   const genreIds = asStringArray(body.genreIds);
   const voiceTypeIds = asStringArray(body.voiceTypeIds);
@@ -82,8 +88,8 @@ export async function POST(request: Request) {
     profile = await prisma.$transaction(async (tx) => {
     const profile = await tx.profile.upsert({
       where: { userId: user.id },
-      create: { userId: user.id, displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther },
-      update: { displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther },
+      create: { userId: user.id, displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther, externalLinks },
+      update: { displayName, bio, qualifications, locationLabel, postalCode, skillLevel, lookingForOther, externalLinks },
     });
 
     // `location` is an Unsupported PostGIS type — Prisma can't write it via

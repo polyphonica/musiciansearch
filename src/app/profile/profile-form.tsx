@@ -42,6 +42,7 @@ export function ProfileForm() {
   const [locationLabel, setLocationLabel] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
+  const [website, setWebsite] = useState("");
   const [lookingForOptionIds, setLookingForOptionIds] = useState<Set<string>>(new Set());
   const [lookingForOther, setLookingForOther] = useState("");
   const [instrumentIds, setInstrumentIds] = useState<Set<string>>(new Set());
@@ -76,6 +77,7 @@ export function ProfileForm() {
         setLocationLabel(profile.locationLabel ?? "");
         setPostalCode(profile.postalCode ?? "");
         setSkillLevel(profile.skillLevel ?? "");
+        setWebsite(profile.externalLinks?.[0] ?? "");
         setLookingForOther(profile.lookingForOther ?? "");
         setInstrumentIds(new Set(profile.instruments.map((i: { instrumentId: string }) => i.instrumentId)));
         setGenreIds(new Set(profile.genres.map((g: { genreId: string }) => g.genreId)));
@@ -114,6 +116,7 @@ export function ProfileForm() {
         locationLabel,
         postalCode,
         skillLevel: skillLevel || null,
+        externalLinks: website.trim() ? [website.trim()] : [],
         lookingForOptionIds: Array.from(lookingForOptionIds),
         lookingForOther: isOther ? lookingForOther : "",
         instrumentIds: Array.from(instrumentIds),
@@ -204,6 +207,17 @@ export function ProfileForm() {
             onChange={(e) => setQualifications(e.target.value)}
             placeholder="e.g. ABRSM Grade 8, Trinity Diploma, 10 years teaching experience"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            type="text"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="e.g. yourname.com or yourband.bandcamp.com"
+          />
+          <p className="text-xs text-muted-foreground">Shown as a link on your public profile.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="skillLevel">Skill level</Label>
