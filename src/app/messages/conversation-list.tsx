@@ -5,7 +5,7 @@ import Link from "next/link";
 
 type Conversation = {
   id: string;
-  otherUserDisplayName: string;
+  otherUserDisplayName: string | null;
   lastMessage: { body: string; createdAt: string; senderId: string } | null;
   unreadCount: number;
 };
@@ -42,7 +42,9 @@ export function ConversationList() {
             className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
           >
             <div className="min-w-0">
-              <p className="font-medium">{c.otherUserDisplayName}</p>
+              <p className="font-medium">
+                {c.otherUserDisplayName ?? "Account no longer available"}
+              </p>
               {c.lastMessage && (
                 <p className="truncate text-sm text-muted-foreground">{c.lastMessage.body}</p>
               )}

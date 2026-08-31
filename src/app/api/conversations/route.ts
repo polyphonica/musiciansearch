@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canMessage, getCurrentUser } from "@/lib/auth";
+import { canMessage, getCurrentUser, hasProfile } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -33,7 +33,7 @@ export async function GET() {
       const lastMessage = c.messages[0] ?? null;
       return {
         id: c.id,
-        otherUserDisplayName: other?.profile?.displayName ?? "Unknown musician",
+        otherUserDisplayName: other?.profile?.displayName ?? null,
         lastMessage: lastMessage
           ? { body: lastMessage.body, createdAt: lastMessage.createdAt, senderId: lastMessage.senderId }
           : null,
@@ -54,6 +54,12 @@ export async function POST(request: Request) {
   if (!canMessage(user)) {
     return NextResponse.json(
       { error: "You must complete identity verification before messaging other musicians." },
+      { status: 403 }
+    );
+  }
+  if (!(await hasProfile(user.id))) {
+    return NextResponse.json(
+      { error: "Create your profile before messaging, so people know who they're talking to." },
       { status: 403 }
     );
   }

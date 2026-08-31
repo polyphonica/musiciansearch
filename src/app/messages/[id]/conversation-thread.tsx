@@ -74,7 +74,9 @@ export function ConversationThread({ conversationId }: { conversationId: string 
 
   return (
     <div className="flex flex-1 flex-col">
-      <h1 className="mb-4 text-2xl font-semibold tracking-tight">{otherName}</h1>
+      <h1 className="mb-4 text-2xl font-semibold tracking-tight">
+        {otherName ?? "This musician's account is no longer available"}
+      </h1>
       <div className="flex-1 space-y-3 overflow-y-auto">
         {messages.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.isMine ? "items-end" : "items-start"}`}>

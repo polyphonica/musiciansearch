@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { canMessage, getCurrentUser } from "@/lib/auth";
+import { canMessage, getCurrentUser, hasProfile } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -73,6 +73,7 @@ export default async function MusicianDetailPage({
 
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profile.userId;
+  const viewerHasProfile = viewer && !isOwnProfile ? await hasProfile(viewer.id) : false;
 
   const availabilityByDay = profile.availability.reduce<Record<number, string[]>>((acc, slot) => {
     (acc[slot.dayOfWeek] ??= []).push(slot.timeOfDay);
@@ -214,7 +215,14 @@ export default async function MusicianDetailPage({
               Complete identity verification to message {profile.displayName}
             </Link>
           )}
-          {viewer && canMessage(viewer) && <MessageComposer profileId={profile.id} />}
+          {viewer && canMessage(viewer) && !viewerHasProfile && (
+            <Link href="/profile" className={cn(buttonVariants({ size: "lg" }))}>
+              Create your profile to message {profile.displayName}
+            </Link>
+          )}
+          {viewer && canMessage(viewer) && viewerHasProfile && (
+            <MessageComposer profileId={profile.id} />
+          )}
         </div>
       )}
 

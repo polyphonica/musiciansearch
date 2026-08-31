@@ -21,6 +21,12 @@ export function canMessage(user: { identityVerifiedAt: Date | null } | null): bo
   return user !== null && user.identityVerifiedAt !== null;
 }
 
+/** A profile (so a display name exists) is required to *start* a new conversation, so a recipient can always identify who's messaging them. */
+export async function hasProfile(userId: string): Promise<boolean> {
+  const profile = await prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+  return profile !== null;
+}
+
 export async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user || !user.isAdmin) return null;

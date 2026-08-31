@@ -37,7 +37,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const other = participants.find((p) => p.userId !== user.id)?.user;
 
   return NextResponse.json({
-    otherUserDisplayName: other?.profile?.displayName ?? "Unknown musician",
+    // null (not a fallback string) when the other participant is gone entirely
+    // (e.g. an account was deleted) — distinct from just having no profile yet.
+    otherUserDisplayName: other?.profile?.displayName ?? null,
     messages: messages.map((m) => ({
       id: m.id,
       body: m.body,
