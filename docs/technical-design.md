@@ -190,6 +190,14 @@ After trying profile creation, the operator found the original fixed `LookingFor
 - **No free/paid tier enforcement on search** (e.g. capped results or advanced filters per `revenue-model.md`) — deferred until Stripe Billing is actually wired up; building tier gating against a subscription system that doesn't exist yet would be premature.
 - Verified end-to-end via curl: a freshly-signed-up, not-yet-identity-verified profile correctly does **not** appear in `/api/musicians` results; after completing the mock disclaimer+identity flow it appears, is correctly included/excluded by instrument filtering, and its detail page renders with the verified badge.
 
+## Test Data: Fake Musicians for Local Search Testing (2026-08-31)
+
+`prisma/seed-test-musicians.ts` (run via `npm run db:seed-test-musicians`) creates ~24 fake, fully-verified musician accounts + profiles with randomized instruments/genres/voice-types/looking-for selections drawn from whatever's actually in the reference tables at the time it runs — so it stays valid even after the lists are edited via `/admin`. Deliberately kept **separate** from `prisma/seed.ts` (the reference-list seed wired into `migrations.seed`), since that one is meant to be safe to run in any environment including production, and fake user accounts must never end up there.
+
+- Refuses to run if `NODE_ENV=production`, same convention as the mock-identity/mock-otp flags.
+- Idempotent: deletes everything under the `@test.musiciansearch.invalid` email domain first, then recreates a fresh batch — safe to re-run.
+- **Gotcha hit while building it:** unlike `prisma/seed.ts` (which is spawned by the Prisma CLI as a subprocess and inherits `.env` already loaded by `prisma.config.ts`'s own `import "dotenv/config"`), this script is run directly via `tsx` through an npm script, bypassing the Prisma CLI entirely — so it needs its own `import "dotenv/config"` at the top, or `DATABASE_URL` is undefined and `pg` fails with a confusing `SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string` error that has nothing obviously to do with a missing env var.
+
 Not done yet (still ahead in Phase 3):
 - Messaging pages/API routes.
 - Geocoding for `Profile.locationLabel` → `Profile.location` (PostGIS point) — currently `locationLabel` is a free-text string with no real coordinates behind it, so radius search won't work until a geocoding provider is chosen (a decision similar in kind to the Stripe/Twilio ones — cost/vendor tradeoffs the user should weigh in on, not yet asked).

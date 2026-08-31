@@ -28,7 +28,11 @@ Once a local/dev database is reachable:
 
 ```bash
 npx prisma migrate dev --name init
+npx prisma db seed                 # instruments/genres/voice types/looking-for options
+npm run db:seed-test-musicians     # optional: ~24 fake musicians for testing search
 ```
+
+`db:seed-test-musicians` is dev-only (refuses to run if `NODE_ENV=production`) and idempotent — it deletes and recreates everything under the `@test.musiciansearch.invalid` email domain each time it's run, so it's safe to re-run for a fresh batch. To remove the fake data without regenerating it: `DELETE FROM users WHERE email LIKE '%@test.musiciansearch.invalid';` (cascades to their profiles).
 
 ## Production Deployment
 
