@@ -1,7 +1,34 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
+
+function Pill({ children, tone }: { children: React.ReactNode; tone: "teal" | "accent" | "primary" }) {
+  const toneClasses = {
+    teal: "border-teal/30 bg-teal/10 text-teal",
+    accent: "border-accent/40 bg-accent/15 text-accent-foreground",
+    primary: "border-primary/30 bg-primary/10 text-primary",
+  }[tone];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${toneClasses}`}>
+      {children}
+    </span>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-2 border-t border-border pt-6 first:border-t-0 first:pt-0">
+      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{title}</h2>
+      {children}
+    </section>
+  );
+}
 
 export default async function MusicianDetailPage({
   params,
@@ -43,110 +70,129 @@ export default async function MusicianDetailPage({
   }, {});
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{profile.displayName}</h1>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            Verified
-          </span>
+    <div className="mx-auto max-w-2xl space-y-8 px-6 py-12">
+      <div className="flex items-start gap-5">
+        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-primary-foreground">
+          {initials(profile.displayName)}
         </div>
-        {profile.locationLabel && (
-          <p className="text-sm text-muted-foreground">{profile.locationLabel}</p>
+        <div className="space-y-1.5 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{profile.displayName}</h1>
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+              ✓ Verified
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-base text-muted-foreground">
+            {profile.locationLabel && <span>{profile.locationLabel}</span>}
+            {profile.skillLevel && (
+              <>
+                {profile.locationLabel && <span aria-hidden>·</span>}
+                <span className="capitalize">{profile.skillLevel}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6 rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+        {profile.bio && (
+          <Section title="Biography">
+            <p className="whitespace-pre-line text-base leading-relaxed text-foreground">{profile.bio}</p>
+          </Section>
+        )}
+
+        {profile.qualifications && (
+          <Section title="Qualifications / experience">
+            <p className="whitespace-pre-line text-base leading-relaxed text-foreground">
+              {profile.qualifications}
+            </p>
+          </Section>
+        )}
+
+        {profile.instruments.length > 0 && (
+          <Section title="Instruments">
+            <div className="flex flex-wrap gap-2">
+              {profile.instruments.map((i) => (
+                <Pill key={i.instrument.name} tone="teal">
+                  {i.instrument.name}
+                </Pill>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {profile.voiceTypes.length > 0 && (
+          <Section title="Voice type">
+            <div className="flex flex-wrap gap-2">
+              {profile.voiceTypes.map((v) => (
+                <Pill key={v.voiceType.name} tone="teal">
+                  {v.voiceType.name}
+                </Pill>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {profile.genres.length > 0 && (
+          <Section title="Genres">
+            <div className="flex flex-wrap gap-2">
+              {profile.genres.map((g) => (
+                <Pill key={g.genre.name} tone="accent">
+                  {g.genre.name}
+                </Pill>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {(profile.lookingFor.length > 0 || profile.lookingForOther) && (
+          <Section title="Looking for">
+            <div className="flex flex-wrap gap-2">
+              {profile.lookingFor.map((l) => (
+                <Pill key={l.lookingForOption.name} tone="primary">
+                  {l.lookingForOption.name}
+                </Pill>
+              ))}
+            </div>
+            {profile.lookingForOther && (
+              <p className="text-base text-foreground">{profile.lookingForOther}</p>
+            )}
+          </Section>
+        )}
+
+        {Object.keys(availabilityByDay).length > 0 && (
+          <Section title="Availability">
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-1 text-base text-foreground sm:grid-cols-3">
+              {Object.entries(availabilityByDay).map(([day, times]) => (
+                <li key={day}>
+                  <span className="font-medium">{DAYS[Number(day)]}</span>{" "}
+                  <span className="text-muted-foreground">{times.join(", ")}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {profile.externalLinks.length > 0 && (
+          <Section title="Links">
+            <div className="flex flex-wrap gap-2">
+              {profile.externalLinks.map((link) => (
+                <a
+                  key={link}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-full border border-teal/30 bg-teal/10 px-3 py-1 text-sm font-medium text-teal hover:bg-teal/20"
+                >
+                  {link}
+                </a>
+              ))}
+            </div>
+          </Section>
         )}
       </div>
 
-      {profile.bio && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Biography</h2>
-          <p className="whitespace-pre-line text-sm text-muted-foreground">{profile.bio}</p>
-        </section>
-      )}
-
-      {profile.qualifications && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Qualifications / experience</h2>
-          <p className="whitespace-pre-line text-sm text-muted-foreground">
-            {profile.qualifications}
-          </p>
-        </section>
-      )}
-
-      {profile.skillLevel && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Skill level</h2>
-          <p className="text-sm text-muted-foreground capitalize">{profile.skillLevel}</p>
-        </section>
-      )}
-
-      {profile.instruments.length > 0 && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Instruments / voice</h2>
-          <p className="text-sm text-muted-foreground">
-            {profile.instruments.map((i) => i.instrument.name).join(", ")}
-          </p>
-        </section>
-      )}
-
-      {profile.voiceTypes.length > 0 && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Voice type</h2>
-          <p className="text-sm text-muted-foreground">
-            {profile.voiceTypes.map((v) => v.voiceType.name).join(", ")}
-          </p>
-        </section>
-      )}
-
-      {profile.genres.length > 0 && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Genres</h2>
-          <p className="text-sm text-muted-foreground">
-            {profile.genres.map((g) => g.genre.name).join(", ")}
-          </p>
-        </section>
-      )}
-
-      {(profile.lookingFor.length > 0 || profile.lookingForOther) && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Looking for</h2>
-          <p className="text-sm text-muted-foreground">
-            {profile.lookingFor.map((l) => l.lookingForOption.name).join(", ")}
-          </p>
-          {profile.lookingForOther && (
-            <p className="text-sm text-muted-foreground">{profile.lookingForOther}</p>
-          )}
-        </section>
-      )}
-
-      {Object.keys(availabilityByDay).length > 0 && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Availability</h2>
-          <ul className="text-sm text-muted-foreground">
-            {Object.entries(availabilityByDay).map(([day, times]) => (
-              <li key={day}>
-                {DAYS[Number(day)]}: {times.join(", ")}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {profile.externalLinks.length > 0 && (
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">Links</h2>
-          <ul className="text-sm">
-            {profile.externalLinks.map((link) => (
-              <li key={link}>
-                <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  {link}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Contact details are never shown on profiles. In-app messaging is coming soon.
       </p>
     </div>

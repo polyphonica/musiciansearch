@@ -50,43 +50,44 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* "Concert poster" — warm parchment ground with bold, saturated ink:
-   vivid crimson, teal, and gold, like screen-printed gig posters rather
-   than a muted programme booklet. */
+/* "Concert poster" — a clean, near-white gallery wall for bold, saturated
+   ink: vivid crimson, teal, and gold. (Revised from an earlier parchment/tan
+   version the user found dated-looking — the color now comes entirely from
+   the accents, not the background.) */
 :root {
-  --background: #fcf4e7;
-  --foreground: #241a14;
-  --card: #fffdf9;
-  --card-foreground: #241a14;
-  --popover: #fffdf9;
-  --popover-foreground: #241a14;
+  --background: #f7f6f2;
+  --foreground: #201b17;
+  --card: #ffffff;
+  --card-foreground: #201b17;
+  --popover: #ffffff;
+  --popover-foreground: #201b17;
   --primary: #e63946;
   --primary-foreground: #fff8ed;
   --secondary: #cfeeea;
   --secondary-foreground: #0b6e6e;
-  --muted: #f1e3c9;
-  --muted-foreground: #6b5d4f;
+  --muted: #eeece6;
+  --muted-foreground: #4d4a44;
   --accent: #f4a300;
-  --accent-foreground: #241a14;
+  --accent-foreground: #201b17;
   --teal: #0fa3a3;
   --teal-foreground: #ffffff;
-  --destructive: #ff6b4a;
-  --border: #d9b98a;
+  --destructive: #d6362a;
+  --border: #e0ded6;
   --input: #0fa3a3;
   --ring: #e63946;
   --chart-1: #e63946;
   --chart-2: #0fa3a3;
   --chart-3: #f4a300;
-  --chart-4: #6b5d4f;
-  --chart-5: #241a14;
+  --chart-4: #4d4a44;
+  --chart-5: #201b17;
   --radius: 0.85rem;
-  --sidebar: #f1e3c9;
-  --sidebar-foreground: #241a14;
+  --sidebar: #eeece6;
+  --sidebar-foreground: #201b17;
   --sidebar-primary: #e63946;
   --sidebar-primary-foreground: #fff8ed;
   --sidebar-accent: #cfeeea;
   --sidebar-accent-foreground: #0b6e6e;
-  --sidebar-border: #d9b98a;
+  --sidebar-border: #e0ded6;
   --sidebar-ring: #e63946;
 }
 
