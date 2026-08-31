@@ -173,6 +173,9 @@ const POSTAL_CODES: { country: "GB" | "US"; code: string; lat: number; lng: numb
   { country: "GB", code: "DY1", lat: 52.5091, lng: -2.085 },
   { country: "GB", code: "WS1", lat: 52.5862, lng: -1.9829 },
   { country: "GB", code: "B91", lat: 52.4123, lng: -1.7789 },
+  // Added on request after real-world testing found gaps in the starter list
+  { country: "GB", code: "LL36", lat: 52.795, lng: -4.087 }, // Dyffryn Ardudwy / Tal-y-bont, Gwynedd
+  { country: "GB", code: "BN41", lat: 50.8384, lng: -0.2058 }, // Portslade-by-Sea
   // US — major cities
   { country: "US", code: "10001", lat: 40.7506, lng: -73.9972 },
   { country: "US", code: "90001", lat: 33.9731, lng: -118.2479 },
