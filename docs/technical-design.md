@@ -262,6 +262,14 @@ Reported by the user: signing in again (an existing, already-verified account) w
 
 Verified via curl: a fresh account taken through full verification, then a simulated "returning login" (fresh OTP cycle), correctly redirects `/disclaimer` → `/verify-identity` → `/profile` via 307s without ever showing either intermediate form; re-POSTing `/api/disclaimer/accept` for an already-accepted user no longer creates a duplicate row. Confirmed by the user against their own real account as well.
 
+## Bug Fix: Nav Bar Stayed in "Signed Out" State After Signing In (2026-08-31)
+
+Reported by the user: after signing in (an existing, already-verified account), `/profile` loaded correctly (proving the session was genuinely valid), but the nav bar still showed "Sign in" instead of "Sign out" — and since the nav is also where the "Messages" link lives, there was no way to reach the inbox either. Read by the user as "it is signing me out somehow", though the session itself was never actually cleared — this was a stale-display bug, not a real sign-out.
+
+**Root cause:** the nav bar's logged-in/out state comes from the root layout (`src/app/layout.tsx`), which is a shared segment across all routes. Next.js's App Router does not re-fetch a shared layout's server data on an ordinary client-side navigation (`router.push`) — only `router.refresh()` (or a hard reload) invalidates that cache and forces a re-fetch. `handleSignOut` in `nav-bar.tsx` already called `router.refresh()` after clearing the session, which is why sign-*out* correctly updated the nav immediately — but nothing called it at the point of sign-*in* (`POST /api/auth/verify-otp` succeeding, in `src/app/verify/verify-form.tsx`), so the nav kept rendering with whatever `user` state the layout had on its very first mount that session (logged out).
+
+**Fix:** added `router.refresh()` right before the post-verification `router.push("/disclaimer")` in `verify-form.tsx` — the same pattern already used for sign-out, applied symmetrically at the point session state is created. A tab that was already open and stale from before this fix needs one manual page reload to pick it up; new sign-ins going forward update the nav immediately.
+
 Not done yet (still ahead in Phase 3):
 - Real-time delivery (Socket.io) — currently 4-second polling while a thread is open; see above.
 - Message pagination beyond the newest 200 per conversation, and a "typing…" indicator (both explicitly deferred alongside the Socket.io work, since they're naturally the same infra).

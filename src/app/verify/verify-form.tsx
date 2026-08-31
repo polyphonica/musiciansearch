@@ -30,6 +30,7 @@ export function VerifyForm({ mockEnabled }: { mockEnabled: boolean }) {
       setError(data.error ?? "Something went wrong. Please try again.");
       return;
     }
+    router.refresh(); // the root layout's nav bar caches session state; force it to re-fetch now that a session cookie exists
     router.push("/disclaimer");
   }
 
