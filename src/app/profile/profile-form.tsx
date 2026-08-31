@@ -17,11 +17,8 @@ const SKILL_LEVELS = [
   { value: "professional", label: "Professional" },
 ];
 
-const LOOKING_FOR = [
-  { value: "band_member", label: "Band / ensemble member" },
-  { value: "accompanist", label: "Accompanist" },
-  { value: "jam_partner", label: "Jam partner" },
-];
+// Must match the "Other" row seeded/renamed in the LookingForOption admin list.
+const OTHER_OPTION_NAME = "Other";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TIMES = ["morning", "afternoon", "evening"] as const;
@@ -37,13 +34,15 @@ export function ProfileForm() {
   const [instruments, setInstruments] = useState<RefItem[]>([]);
   const [genres, setGenres] = useState<RefItem[]>([]);
   const [voiceTypes, setVoiceTypes] = useState<RefItem[]>([]);
+  const [lookingForOptions, setLookingForOptions] = useState<RefItem[]>([]);
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [qualifications, setQualifications] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
-  const [lookingFor, setLookingFor] = useState<Set<string>>(new Set());
+  const [lookingForOptionIds, setLookingForOptionIds] = useState<Set<string>>(new Set());
+  const [lookingForOther, setLookingForOther] = useState("");
   const [instrumentIds, setInstrumentIds] = useState<Set<string>>(new Set());
   const [genreIds, setGenreIds] = useState<Set<string>>(new Set());
   const [voiceTypeIds, setVoiceTypeIds] = useState<Set<string>>(new Set());
@@ -59,11 +58,13 @@ export function ProfileForm() {
       fetch("/api/admin/instruments").then((r) => r.json()),
       fetch("/api/admin/genres").then((r) => r.json()),
       fetch("/api/admin/voice-types").then((r) => r.json()),
+      fetch("/api/admin/looking-for").then((r) => r.json()),
       fetch("/api/profile").then((r) => r.json()),
-    ]).then(([instrumentsRes, genresRes, voiceTypesRes, profileRes]) => {
+    ]).then(([instrumentsRes, genresRes, voiceTypesRes, lookingForRes, profileRes]) => {
       setInstruments(instrumentsRes.items ?? []);
       setGenres(genresRes.items ?? []);
       setVoiceTypes(voiceTypesRes.items ?? []);
+      setLookingForOptions(lookingForRes.items ?? []);
 
       const profile = profileRes.profile;
       if (profile) {
@@ -72,10 +73,13 @@ export function ProfileForm() {
         setQualifications(profile.qualifications ?? "");
         setLocationLabel(profile.locationLabel ?? "");
         setSkillLevel(profile.skillLevel ?? "");
-        setLookingFor(new Set(profile.lookingFor ?? []));
+        setLookingForOther(profile.lookingForOther ?? "");
         setInstrumentIds(new Set(profile.instruments.map((i: { instrumentId: string }) => i.instrumentId)));
         setGenreIds(new Set(profile.genres.map((g: { genreId: string }) => g.genreId)));
         setVoiceTypeIds(new Set(profile.voiceTypes.map((v: { voiceTypeId: string }) => v.voiceTypeId)));
+        setLookingForOptionIds(
+          new Set(profile.lookingFor.map((l: { lookingForOptionId: string }) => l.lookingForOptionId))
+        );
         setAvailability(
           new Set(
             profile.availability.map((a: { dayOfWeek: number; timeOfDay: string }) => `${a.dayOfWeek}-${a.timeOfDay}`)
@@ -87,6 +91,9 @@ export function ProfileForm() {
   }, []);
 
   const isSinger = instruments.some((i) => i.name === "Voice" && instrumentIds.has(i.id));
+  const isOther = lookingForOptions.some(
+    (o) => o.name === OTHER_OPTION_NAME && lookingForOptionIds.has(o.id)
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +110,8 @@ export function ProfileForm() {
         qualifications,
         locationLabel,
         skillLevel: skillLevel || null,
-        lookingFor: Array.from(lookingFor),
+        lookingForOptionIds: Array.from(lookingForOptionIds),
+        lookingForOther: isOther ? lookingForOther : "",
         instrumentIds: Array.from(instrumentIds),
         genreIds: Array.from(genreIds),
         voiceTypeIds: isSinger ? Array.from(voiceTypeIds) : [],
@@ -195,15 +203,24 @@ export function ProfileForm() {
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Looking for</legend>
-        {LOOKING_FOR.map((opt) => (
-          <label key={opt.value} className="flex items-center gap-2 text-sm">
+        {lookingForOptions.map((opt) => (
+          <label key={opt.id} className="flex items-center gap-2 text-sm">
             <Checkbox
-              checked={lookingFor.has(opt.value)}
-              onCheckedChange={() => setLookingFor(toggle(lookingFor, opt.value))}
+              checked={lookingForOptionIds.has(opt.id)}
+              onCheckedChange={() => setLookingForOptionIds(toggle(lookingForOptionIds, opt.id))}
             />
-            {opt.label}
+            {opt.name}
           </label>
         ))}
+        {isOther && (
+          <Textarea
+            rows={2}
+            value={lookingForOther}
+            onChange={(e) => setLookingForOther(e.target.value)}
+            placeholder="Tell us more about what you're looking for"
+            className="mt-1"
+          />
+        )}
       </fieldset>
 
       <fieldset className="space-y-2">

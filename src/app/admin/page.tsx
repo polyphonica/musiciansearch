@@ -16,6 +16,11 @@ export default async function AdminPage() {
       <TaxonomyEditor title="Instruments" apiBase="/api/admin/instruments" />
       <TaxonomyEditor title="Voice types" apiBase="/api/admin/voice-types" />
       <TaxonomyEditor title="Genres" apiBase="/api/admin/genres" />
+      <TaxonomyEditor
+        title="Looking for"
+        apiBase="/api/admin/looking-for"
+        note={`The item named "Other" is special — selecting it on a profile reveals a free-text box. Rename it and that free-text box stops appearing, unless you update src/app/profile/profile-form.tsx to match.`}
+      />
     </div>
   );
 }

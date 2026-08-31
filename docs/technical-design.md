@@ -170,6 +170,17 @@ Both `.env` credentials that ARE configured now: `TWILIO_ACCOUNT_SID` and `TWILI
 
 **Implementation note (ESLint):** `eslint-plugin-react-hooks` 7.x's `set-state-in-effect` rule flags calling a named async function (that internally calls `setState`) from inside a `useEffect` body, even fire-and-forget — a stricter check than earlier versions. Fetch-on-mount effects in this codebase use a `.then()` promise chain directly in the effect body instead of an intermediate async function, which the rule accepts (see `src/app/admin/taxonomy-editor.tsx` and `src/app/profile/profile-form.tsx`).
 
+## Phase 3 Progress: "Looking For" Became a 4th Admin-Editable Taxonomy (2026-08-31)
+
+After trying profile creation, the operator found the original fixed `LookingFor` enum (`band_member`/`accompanist`/`jam_partner`) too limited — it had no good option for "an amateur wanting an occasional duet partner of similar standard," which "jam partner" doesn't capture. Given the admin-editable pattern already built for instruments/genres/voice-types, the fix was to convert `LookingFor` from a hardcoded enum to the same pattern rather than just adding one more hardcoded value:
+
+- **Removed** the `LookingFor` enum and `Profile.lookingFor LookingFor[]` column.
+- **Added** `LookingForOption`/`ProfileLookingFor` (reference table + join table, identical shape to Instrument/Genre/VoiceType), plus `Profile.lookingForOther` (free text).
+- **`GET`/`POST`/`PATCH`/`DELETE /api/admin/looking-for[/[id]]`** — reuses the same `src/lib/taxonomy.ts` generic CRUD as the other three lists; `/admin` now has a 4th `<TaxonomyEditor>` section.
+- **Seeded list** (`prisma/seed.ts`): Band/ensemble member, Accompanist, Duet/occasional playing partner (the specific gap that prompted this), Jam partner, Sight-reading group, **Other**.
+- **"Other" convention:** one seeded row is literally named "Other" — the profile form matches on that exact name (`OTHER_OPTION_NAME` in `src/app/profile/profile-form.tsx`) to conditionally reveal a free-text textarea bound to `Profile.lookingForOther`. This is the same name-matching convention already used for "Voice" triggering the voice-type section — fragile in the sense that renaming "Other" via `/admin` silently breaks the free-text reveal (the admin page shows a note about this), but consistent with the existing pattern rather than introducing a new `isSpecial` flag for a single case.
+- Verified end-to-end via curl: seeded list fetched correctly, a profile saved with "Duet / occasional playing partner" + "Other" (with free text) round-trips correctly through `GET /api/profile`, and non-admin write access to the new endpoint correctly 403s.
+
 Not done yet (still ahead in Phase 3):
 - Search and messaging pages/API routes (profile creation now exists; search needs real geocoding for `Profile.location`, still deferred per the open item below).
 - Public profile view (everything built so far is "manage your own profile" — no `/musicians/[id]` public page yet, and no listing of other users' profiles).

@@ -36,7 +36,15 @@ function TaxonomyRow({
   );
 }
 
-export function TaxonomyEditor({ title, apiBase }: { title: string; apiBase: string }) {
+export function TaxonomyEditor({
+  title,
+  apiBase,
+  note,
+}: {
+  title: string;
+  apiBase: string;
+  note?: string;
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +114,7 @@ export function TaxonomyEditor({ title, apiBase }: { title: string; apiBase: str
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <h2 className="font-semibold">{title}</h2>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (

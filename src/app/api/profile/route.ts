@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { LookingFor, SkillLevel } from "@/generated/prisma/enums";
+import { SkillLevel } from "@/generated/prisma/enums";
 
 const SKILL_LEVELS = Object.values(SkillLevel);
-const LOOKING_FOR_VALUES = Object.values(LookingFor);
 const DAYS_OF_WEEK = [0, 1, 2, 3, 4, 5, 6];
 const TIMES_OF_DAY = ["morning", "afternoon", "evening"];
 
@@ -18,6 +17,7 @@ export async function GET() {
       instruments: { select: { instrumentId: true } },
       genres: { select: { genreId: true } },
       voiceTypes: { select: { voiceTypeId: true } },
+      lookingFor: { select: { lookingForOptionId: true } },
       availability: { select: { dayOfWeek: true, timeOfDay: true } },
     },
   });
@@ -55,13 +55,13 @@ export async function POST(request: Request) {
       ? (body.skillLevel as SkillLevel)
       : null;
 
-  const lookingFor = asStringArray(body.lookingFor).filter((v) =>
-    LOOKING_FOR_VALUES.includes(v as LookingFor)
-  ) as LookingFor[];
+  const lookingForOther =
+    typeof body.lookingForOther === "string" ? body.lookingForOther.slice(0, 500) : null;
 
   const instrumentIds = asStringArray(body.instrumentIds);
   const genreIds = asStringArray(body.genreIds);
   const voiceTypeIds = asStringArray(body.voiceTypeIds);
+  const lookingForOptionIds = asStringArray(body.lookingForOptionIds);
 
   const availability: { dayOfWeek: number; timeOfDay: string }[] = Array.isArray(body.availability)
     ? body.availability.filter(
@@ -78,8 +78,8 @@ export async function POST(request: Request) {
     profile = await prisma.$transaction(async (tx) => {
     const profile = await tx.profile.upsert({
       where: { userId: user.id },
-      create: { userId: user.id, displayName, bio, qualifications, locationLabel, skillLevel, lookingFor },
-      update: { displayName, bio, qualifications, locationLabel, skillLevel, lookingFor },
+      create: { userId: user.id, displayName, bio, qualifications, locationLabel, skillLevel, lookingForOther },
+      update: { displayName, bio, qualifications, locationLabel, skillLevel, lookingForOther },
     });
 
     await tx.profileInstrument.deleteMany({ where: { profileId: profile.id } });
@@ -102,6 +102,14 @@ export async function POST(request: Request) {
     if (voiceTypeIds.length > 0) {
       await tx.profileVoiceType.createMany({
         data: voiceTypeIds.map((voiceTypeId) => ({ profileId: profile.id, voiceTypeId })),
+        skipDuplicates: true,
+      });
+    }
+
+    await tx.profileLookingFor.deleteMany({ where: { profileId: profile.id } });
+    if (lookingForOptionIds.length > 0) {
+      await tx.profileLookingFor.createMany({
+        data: lookingForOptionIds.map((lookingForOptionId) => ({ profileId: profile.id, lookingForOptionId })),
         skipDuplicates: true,
       });
     }

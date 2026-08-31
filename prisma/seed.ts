@@ -80,6 +80,18 @@ const VOICE_TYPES = [
   "Bass",
 ];
 
+// "Other" is a special name the profile form matches to reveal a free-text
+// field (Profile.lookingForOther) — keep it last, and if renamed via /admin,
+// update src/app/profile/profile-form.tsx's OTHER_OPTION_NAME to match.
+const LOOKING_FOR_OPTIONS = [
+  "Band / ensemble member",
+  "Accompanist",
+  "Duet / occasional playing partner",
+  "Jam partner",
+  "Sight-reading group",
+  "Other",
+];
+
 async function main() {
   await prisma.instrument.createMany({
     data: INSTRUMENTS.map((name) => ({ name })),
@@ -93,8 +105,12 @@ async function main() {
     data: VOICE_TYPES.map((name) => ({ name })),
     skipDuplicates: true,
   });
+  await prisma.lookingForOption.createMany({
+    data: LOOKING_FOR_OPTIONS.map((name) => ({ name })),
+    skipDuplicates: true,
+  });
   console.log(
-    `Seeded ${INSTRUMENTS.length} instruments, ${GENRES.length} genres, ${VOICE_TYPES.length} voice types (existing rows left untouched).`
+    `Seeded ${INSTRUMENTS.length} instruments, ${GENRES.length} genres, ${VOICE_TYPES.length} voice types, ${LOOKING_FOR_OPTIONS.length} looking-for options (existing rows left untouched).`
   );
 }
 

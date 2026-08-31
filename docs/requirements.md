@@ -33,8 +33,9 @@ It is explicitly **not** a marketplace for paid gigs (v1) and explicitly **not**
 - Availability **is** shown publicly (decided 2026-08-31) — it's core to matching ("looking for a Sunday afternoon quartet") and reveals only a general weekly pattern, not an exact schedule or real-time location.
 
 ### Admin: Editable Reference Lists
-- Instruments, genres, and voice types are **admin-editable at runtime**, not hardcoded — added, renamed, or removed via an admin interface rather than requiring a code change/deploy. A small `isAdmin` flag on `User` gates this; there's no broader roles/permissions system since only this one need exists so far.
+- Instruments, genres, voice types, **and "looking for" options** are all **admin-editable at runtime**, not hardcoded — added, renamed, or removed via an admin interface rather than requiring a code change/deploy. A small `isAdmin` flag on `User` gates this; there's no broader roles/permissions system since only this one need exists so far.
 - These lists are seeded with a starting set (see `tech-stack.md`) but are expected to be refined by the operator over time, particularly the genre and early-music-specific instrument lists.
+- **"Looking for" was originally a fixed 3-option list (band member/accompanist/jam partner) and was changed to admin-editable after the operator found it too limited in practice** — real amateur use cases like "someone to occasionally play duets with at a similar standard" didn't fit "jam partner," which reads as informal improvisation rather than a classical/early-music duet partner. The list now includes an admin-editable set of options plus a fixed **"Other" option that reveals a free-text field** for anything not covered by the list.
 
 ### Search & Discovery
 - Filter/search by instrument, genre, skill level, location radius, availability (e.g. weekends, evenings), and "looking for" type (band member, accompanist, jam partner).

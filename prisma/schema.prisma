@@ -30,12 +30,6 @@ enum SkillLevel {
   professional
 }
 
-enum LookingFor {
-  band_member
-  accompanist
-  jam_partner
-}
-
 enum ReportStatus {
   open
   reviewed
@@ -76,7 +70,7 @@ model Profile {
   location     Unsupported("geography(Point, 4326)")?
   locationLabel String? @map("location_label")
   skillLevel   SkillLevel? @map("skill_level")
-  lookingFor   LookingFor[] @map("looking_for")
+  lookingForOther String? @map("looking_for_other")
   avatarUrl    String?  @map("avatar_url")
   sampleMediaUrls String[] @map("sample_media_urls")
   externalLinks   String[] @map("external_links")
@@ -86,6 +80,7 @@ model Profile {
   instruments  ProfileInstrument[]
   genres       ProfileGenre[]
   voiceTypes   ProfileVoiceType[]
+  lookingFor   ProfileLookingFor[]
   availability AvailabilitySlot[]
 
   @@map("profiles")
@@ -113,6 +108,17 @@ model VoiceType {
   profiles ProfileVoiceType[]
 
   @@map("voice_types")
+}
+
+// Admin-editable, like Instrument/Genre/VoiceType. One row is expected to be
+// named "Other" — selecting it reveals Profile.lookingForOther in the UI
+// (matched by name, the same convention "Voice" uses for voice types).
+model LookingForOption {
+  id       String   @id @default(uuid())
+  name     String   @unique
+  profiles ProfileLookingFor[]
+
+  @@map("looking_for_options")
 }
 
 model ProfileInstrument {
@@ -143,6 +149,16 @@ model ProfileVoiceType {
 
   @@id([profileId, voiceTypeId])
   @@map("profile_voice_types")
+}
+
+model ProfileLookingFor {
+  profileId          String @map("profile_id")
+  lookingForOptionId String @map("looking_for_option_id")
+  profile            Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  lookingForOption   LookingForOption @relation(fields: [lookingForOptionId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, lookingForOptionId])
+  @@map("profile_looking_for")
 }
 
 model AvailabilitySlot {
