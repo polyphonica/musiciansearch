@@ -6,6 +6,36 @@ import { Input } from "@/components/ui/input";
 
 type Item = { id: string; name: string };
 
+function TaxonomyRow({
+  item,
+  onRename,
+  onRemove,
+}: {
+  item: Item;
+  onRename: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [name, setName] = useState(item.name);
+
+  return (
+    <li className="flex items-center gap-2">
+      <Input
+        value={name}
+        className="h-7 text-sm"
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => {
+          const trimmed = name.trim();
+          if (trimmed && trimmed !== item.name) onRename(item.id, trimmed);
+          else setName(item.name);
+        }}
+      />
+      <Button type="button" variant="outline" size="sm" onClick={() => onRemove(item.id)}>
+        Remove
+      </Button>
+    </li>
+  );
+}
+
 export function TaxonomyEditor({ title, apiBase }: { title: string; apiBase: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [newName, setNewName] = useState("");
@@ -81,25 +111,7 @@ export function TaxonomyEditor({ title, apiBase }: { title: string; apiBase: str
       ) : (
         <ul className="space-y-1">
           {items.map((item) => (
-            <li key={item.id} className="flex items-center gap-2">
-              <Input
-                defaultValue={item.name}
-                className="h-7 text-sm"
-                onBlur={(e) => {
-                  if (e.target.value.trim() && e.target.value !== item.name) {
-                    renameItem(item.id, e.target.value.trim());
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => removeItem(item.id)}
-              >
-                Remove
-              </Button>
-            </li>
+            <TaxonomyRow key={item.id} item={item} onRename={renameItem} onRemove={removeItem} />
           ))}
           {items.length === 0 && (
             <li className="text-sm text-muted-foreground">No items yet.</li>
