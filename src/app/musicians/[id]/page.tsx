@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MessageComposer } from "./message-composer";
+import { ReportButton } from "@/components/report-button";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -220,6 +221,10 @@ export default async function MusicianDetailPage({
       <p className="text-sm text-muted-foreground">
         Contact details are never shown on profiles — arrange to meet only through messages here.
       </p>
+
+      {!isOwnProfile && viewer && (
+        <ReportButton reportedUserId={profile.userId} label="Report this profile" />
+      )}
     </div>
   );
 }

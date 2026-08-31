@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ReportButton } from "@/components/report-button";
 
 type Message = {
   id: string;
@@ -76,7 +77,7 @@ export function ConversationThread({ conversationId }: { conversationId: string 
       <h1 className="mb-4 text-2xl font-semibold tracking-tight">{otherName}</h1>
       <div className="flex-1 space-y-3 overflow-y-auto">
         {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}>
+          <div key={m.id} className={`flex flex-col ${m.isMine ? "items-end" : "items-start"}`}>
             <div
               className={`max-w-[75%] rounded-2xl px-4 py-2 text-base ${
                 m.isMine
@@ -93,6 +94,11 @@ export function ConversationThread({ conversationId }: { conversationId: string 
                 {new Date(m.createdAt).toLocaleString()}
               </p>
             </div>
+            {!m.isMine && (
+              <div className="mt-1">
+                <ReportButton reportedUserId={m.senderId} reportedMessageId={m.id} label="Report" />
+              </div>
+            )}
           </div>
         ))}
         {messages.length === 0 && (

@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { TaxonomyEditor } from "./taxonomy-editor";
 
 export default async function AdminPage() {
@@ -7,7 +10,12 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Admin: reference lists</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Admin: reference lists</h1>
+        <Link href="/admin/reports" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Reports
+        </Link>
+      </div>
       <p className="text-sm text-muted-foreground">
         These lists power the dropdowns on every musician profile. Renaming
         an item updates it everywhere it&apos;s already selected; removing one
