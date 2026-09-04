@@ -5,6 +5,7 @@ import { SkillLevel } from "@/generated/prisma/enums";
 
 const PAGE_SIZE = 20;
 const SKILL_LEVELS = Object.values(SkillLevel);
+const TIMES_OF_DAY = ["morning", "afternoon", "evening"];
 const MILES_TO_METERS = 1609.34;
 
 export async function GET(request: Request) {
@@ -20,6 +21,12 @@ export async function GET(request: Request) {
       : undefined;
   const q = url.searchParams.get("q")?.trim() || undefined;
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+
+  const dayOfWeekParam = url.searchParams.get("dayOfWeek");
+  const dayOfWeek =
+    dayOfWeekParam !== null && /^[0-6]$/.test(dayOfWeekParam) ? Number(dayOfWeekParam) : undefined;
+  const timeOfDayParam = url.searchParams.get("timeOfDay");
+  const timeOfDay = timeOfDayParam && TIMES_OF_DAY.includes(timeOfDayParam) ? timeOfDayParam : undefined;
 
   const near = url.searchParams.get("near")?.trim() || undefined;
   const radiusMiles = Math.min(500, Math.max(1, Number(url.searchParams.get("radiusMiles")) || 25));
@@ -46,6 +53,14 @@ export async function GET(request: Request) {
     ...(voiceTypeId && { voiceTypes: { some: { voiceTypeId } } }),
     ...(lookingForOptionId && { lookingFor: { some: { lookingForOptionId } } }),
     ...(skillLevel && { skillLevel }),
+    ...((dayOfWeek !== undefined || timeOfDay) && {
+      availability: {
+        some: {
+          ...(dayOfWeek !== undefined && { dayOfWeek }),
+          ...(timeOfDay && { timeOfDay }),
+        },
+      },
+    }),
     ...(nearProfileIds && { id: { in: nearProfileIds } }),
     ...(q && {
       OR: [

@@ -31,6 +31,22 @@ const RADIUS_OPTIONS = [
   { value: "100", label: "100 miles" },
 ];
 
+const DAY_OPTIONS = [
+  { value: "0", label: "Sunday" },
+  { value: "1", label: "Monday" },
+  { value: "2", label: "Tuesday" },
+  { value: "3", label: "Wednesday" },
+  { value: "4", label: "Thursday" },
+  { value: "5", label: "Friday" },
+  { value: "6", label: "Saturday" },
+];
+
+const TIME_OF_DAY_OPTIONS = [
+  { value: "morning", label: "Morning" },
+  { value: "afternoon", label: "Afternoon" },
+  { value: "evening", label: "Evening" },
+];
+
 function SelectField({
   label,
   value,
@@ -73,6 +89,8 @@ export function MusicianSearch() {
   const [voiceTypeId, setVoiceTypeId] = useState("");
   const [lookingForOptionId, setLookingForOptionId] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
+  const [dayOfWeek, setDayOfWeek] = useState("");
+  const [timeOfDay, setTimeOfDay] = useState("");
   const [near, setNear] = useState("");
   const [radiusMiles, setRadiusMiles] = useState("25");
 
@@ -105,6 +123,8 @@ export function MusicianSearch() {
     if (voiceTypeId) params.set("voiceTypeId", voiceTypeId);
     if (lookingForOptionId) params.set("lookingForOptionId", lookingForOptionId);
     if (skillLevel) params.set("skillLevel", skillLevel);
+    if (dayOfWeek) params.set("dayOfWeek", dayOfWeek);
+    if (timeOfDay) params.set("timeOfDay", timeOfDay);
     if (near) {
       params.set("near", near);
       params.set("radiusMiles", radiusMiles);
@@ -126,7 +146,18 @@ export function MusicianSearch() {
   useEffect(() => {
     runSearch(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, instrumentId, genreId, voiceTypeId, lookingForOptionId, skillLevel, near, radiusMiles]);
+  }, [
+    q,
+    instrumentId,
+    genreId,
+    voiceTypeId,
+    lookingForOptionId,
+    skillLevel,
+    dayOfWeek,
+    timeOfDay,
+    near,
+    radiusMiles,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -199,6 +230,18 @@ export function MusicianSearch() {
             value={skillLevel}
             onChange={setSkillLevel}
             options={SKILL_LEVELS}
+          />
+          <SelectField
+            label="Available on"
+            value={dayOfWeek}
+            onChange={setDayOfWeek}
+            options={DAY_OPTIONS}
+          />
+          <SelectField
+            label="Time of day"
+            value={timeOfDay}
+            onChange={setTimeOfDay}
+            options={TIME_OF_DAY_OPTIONS}
           />
         </div>
       </div>
