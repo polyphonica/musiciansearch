@@ -134,7 +134,7 @@ export function MusicianSearch() {
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name or bio…"
+          placeholder="Search by name, bio, or city…"
         />
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-sm">

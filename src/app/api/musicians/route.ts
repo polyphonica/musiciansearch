@@ -51,6 +51,7 @@ export async function GET(request: Request) {
       OR: [
         { displayName: { contains: q, mode: "insensitive" as const } },
         { bio: { contains: q, mode: "insensitive" as const } },
+        { locationLabel: { contains: q, mode: "insensitive" as const } },
       ],
     }),
   };

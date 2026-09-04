@@ -20,17 +20,19 @@ const prisma = new PrismaClient({ adapter });
 
 const TEST_EMAIL_DOMAIN = "test.musiciansearch.invalid";
 const SKILL_LEVELS = ["beginner", "intermediate", "advanced", "professional"] as const;
-const LOCATIONS = [
-  "Brooklyn, NY",
-  "Oxford, UK",
-  "Bristol, UK",
-  "Austin, TX",
-  "Edinburgh, UK",
-  "Manchester, UK",
-  "Portland, OR",
-  "Cambridge, UK",
-  "Leeds, UK",
-  "Chicago, IL",
+// UK cities only, with outward codes/centroids matching prisma/seed.ts's
+// POSTAL_CODES so these test profiles also work with "near <postcode>" search.
+const CITIES = [
+  { label: "London, UK", postalCode: "SW1A", lat: 51.501, lng: -0.1416 },
+  { label: "Manchester, UK", postalCode: "M1", lat: 53.4794, lng: -2.2453 },
+  { label: "Birmingham, UK", postalCode: "B1", lat: 52.48, lng: -1.9025 },
+  { label: "Edinburgh, UK", postalCode: "EH1", lat: 55.9533, lng: -3.1883 },
+  { label: "Bristol, UK", postalCode: "BS1", lat: 51.4536, lng: -2.5975 },
+  { label: "Leeds, UK", postalCode: "LS1", lat: 53.796, lng: -1.5476 },
+  { label: "Oxford, UK", postalCode: "OX1", lat: 51.752, lng: -1.2577 },
+  { label: "Cambridge, UK", postalCode: "CB1", lat: 52.198, lng: 0.136 },
+  { label: "Glasgow, UK", postalCode: "G1", lat: 55.859, lng: -4.247 },
+  { label: "Liverpool, UK", postalCode: "L1", lat: 53.4056, lng: -2.984 },
 ];
 const BIOS = [
   "Amateur player looking for others of a similar standard to play with regularly.",
@@ -110,12 +112,15 @@ async function main() {
       },
     });
 
-    await prisma.profile.create({
+    const city = pickOne(CITIES);
+
+    const profile = await prisma.profile.create({
       data: {
         userId: user.id,
         displayName,
         bio: pickOne(BIOS),
-        locationLabel: pickOne(LOCATIONS),
+        locationLabel: city.label,
+        postalCode: city.postalCode,
         skillLevel: pickOne([...SKILL_LEVELS]),
         instruments: { create: selectedInstruments.map((i) => ({ instrumentId: i.id })) },
         genres: { create: selectedGenres.map((g) => ({ genreId: g.id })) },
@@ -130,6 +135,10 @@ async function main() {
         },
       },
     });
+
+    // `location` is an Unsupported PostGIS type — Prisma can't write it via
+    // the normal data object, so it's set with a raw query (see src/app/api/profile/route.ts).
+    await prisma.$executeRaw`UPDATE profiles SET location = ST_SetSRID(ST_MakePoint(${city.lng}, ${city.lat}), 4326)::geography WHERE id = ${profile.id}`;
   }
 
   console.log(`Created ${count} test musicians under @${TEST_EMAIL_DOMAIN}.`);
