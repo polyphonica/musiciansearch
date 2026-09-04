@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function VerifyForm({ mockEnabled }: { mockEnabled: boolean }) {
-  const router = useRouter();
   const params = useSearchParams();
   const phone = params.get("phone") ?? "";
   const [code, setCode] = useState("");
@@ -30,8 +29,13 @@ export function VerifyForm({ mockEnabled }: { mockEnabled: boolean }) {
       setError(data.error ?? "Something went wrong. Please try again.");
       return;
     }
-    router.refresh(); // the root layout's nav bar caches session state; force it to re-fetch now that a session cookie exists
-    router.push("/disclaimer");
+    // A full navigation, not router.push, because the root layout reads the
+    // session to render the nav bar -- a client-side transition reuses that
+    // already-mounted layout instead of re-rendering it, so the nav bar (and
+    // anything else keyed off being signed in) stays stuck in its
+    // signed-out state until a real page load happens.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/disclaimer";
   }
 
   return (

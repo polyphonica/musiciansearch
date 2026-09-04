@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -9,15 +9,18 @@ const ONBOARDING_PREFIXES = ["/signup", "/verify", "/disclaimer", "/verify-ident
 
 export function NavBar({ user }: { user: { isAdmin: boolean } | null }) {
   const pathname = usePathname();
-  const router = useRouter();
   const isOnboarding = ONBOARDING_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 
   async function handleSignOut() {
     await fetch("/api/auth/signout", { method: "POST" });
-    router.push("/");
-    router.refresh();
+    // A full navigation, not router.push, since the root layout reads the
+    // session to render this nav bar itself -- a client-side transition
+    // would reuse the already-mounted (signed-in) layout instead of
+    // re-rendering it. See the matching note in verify-form.tsx.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/";
   }
 
   return (
