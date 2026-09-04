@@ -59,6 +59,7 @@ It is explicitly **not** a marketplace for paid gigs (v1) and explicitly **not**
 - The platform does **not** store raw ID documents — relies on the verification vendor's pass/fail response, keeping KYC-style PII off the app's own servers.
 - Verified status is shown publicly as a badge, never the underlying ID/document data.
 - Unverified accounts have materially reduced access (can complete a profile but cannot message or appear in search until verified).
+- **Minimum age is 18** (decided 2026-09-04) — enforced two ways: a self-attestation checkbox at signup (immediate legal cover, not itself proof), and a hard check of the date of birth Stripe Identity extracts from the government ID during verification. A document showing an applicant under 18 is rejected outright (`identityVerifiedAt` is never set) with no retry path — this is a bright-line determination, not something routed through admin moderation.
 
 ## Open Items to Resolve Before Further Technical Design
 

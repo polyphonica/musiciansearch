@@ -9,12 +9,12 @@ export function MockIdentityForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  async function complete(approved: boolean) {
+  async function complete(approved: boolean, simulateUnderage = false) {
     setLoading(true);
     await fetch("/api/identity/mock-complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approved }),
+      body: JSON.stringify({ approved, simulateUnderage }),
     });
     setLoading(false);
     router.push("/verify-identity/return");
@@ -42,6 +42,13 @@ export function MockIdentityForm() {
         <div className="flex flex-col gap-2">
           <Button onClick={() => complete(true)} disabled={loading}>
             Simulate: verification approved
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => complete(true, true)}
+            disabled={loading}
+          >
+            Simulate: approved, but under 18
           </Button>
           <Button
             variant="outline"

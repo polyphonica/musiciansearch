@@ -18,14 +18,24 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const approved = body?.approved === true;
+  // Dev-only stand-in for the real webhook's date-of-birth check (see
+  // src/app/api/webhooks/stripe/route.ts) so the 18+ rejection path is
+  // testable without a real Stripe Identity session.
+  const simulateUnderage = body?.simulateUnderage === true;
 
-  if (approved) {
+  if (approved && simulateUnderage) {
     await prisma.user.update({
       where: { id: user.id },
-      data: { identityVerifiedAt: new Date() },
+      data: { identityRejectedReason: "underage" },
+    });
+    console.warn(`[MOCK] Identity verification rejected (simulated underage) for user ${user.id}`);
+  } else if (approved) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { identityVerifiedAt: new Date(), identityRejectedReason: null },
     });
     console.warn(`[MOCK] Identity verification marked verified for user ${user.id}`);
   }
 
-  return NextResponse.json({ ok: true, approved });
+  return NextResponse.json({ ok: true, approved, underage: simulateUnderage });
 }

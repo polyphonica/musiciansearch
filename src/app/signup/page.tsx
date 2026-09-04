@@ -11,6 +11,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +22,7 @@ export default function SignupPage() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, phone }),
+      body: JSON.stringify({ email, phone, ageConfirmed }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -74,8 +75,17 @@ export default function SignupPage() {
               Include your country code, e.g. +1 for the US.
             </p>
           </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => setAgeConfirmed(e.target.checked)}
+              className="mt-1"
+            />
+            I confirm that I am 18 years of age or older.
+          </label>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading || !ageConfirmed} className="w-full">
             {loading ? "Sending code…" : "Send verification code"}
           </Button>
         </form>

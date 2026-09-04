@@ -9,10 +9,18 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const email = body?.email;
   const phone = body?.phone;
+  const ageConfirmed = body?.ageConfirmed === true;
 
   if (!isValidEmail(email) || !isValidPhone(phone)) {
     return NextResponse.json(
       { error: "A valid email and phone number (E.164 format, e.g. +14155551234) are required." },
+      { status: 400 }
+    );
+  }
+
+  if (!ageConfirmed) {
+    return NextResponse.json(
+      { error: "You must confirm you are 18 or older to continue." },
       { status: 400 }
     );
   }
@@ -22,8 +30,8 @@ export async function POST(request: Request) {
   try {
     await prisma.user.upsert({
       where: { phone },
-      update: { email, ...(isAdmin ? { isAdmin: true } : {}) },
-      create: { email, phone, isAdmin },
+      update: { email, ageConfirmedAt: new Date(), ...(isAdmin ? { isAdmin: true } : {}) },
+      create: { email, phone, isAdmin, ageConfirmedAt: new Date() },
     });
   } catch {
     return NextResponse.json(

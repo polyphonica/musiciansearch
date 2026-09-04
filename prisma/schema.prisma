@@ -41,7 +41,14 @@ model User {
   email                String    @unique
   phone                String    @unique
   phoneVerifiedAt      DateTime? @map("phone_verified_at")
+  // Self-attestation checkbox at signup ("I am 18 or older") -- immediate
+  // legal cover, but not itself proof of age. The actual gate is the date of
+  // birth Stripe Identity extracts from the government ID (see src/lib/age.ts
+  // and the identity webhook), which sets identityRejectedReason instead of
+  // identityVerifiedAt when the extracted age is under the minimum.
+  ageConfirmedAt       DateTime? @map("age_confirmed_at")
   identityVerifiedAt   DateTime? @map("identity_verified_at")
+  identityRejectedReason String? @map("identity_rejected_reason")
   stripeIdentitySessionId String? @map("stripe_identity_session_id")
   subscriptionTier     SubscriptionTier @default(free) @map("subscription_tier")
   stripeCustomerId     String?   @map("stripe_customer_id")
