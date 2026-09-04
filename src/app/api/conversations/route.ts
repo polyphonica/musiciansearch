@@ -29,10 +29,26 @@ export async function GET() {
   });
   const unreadByConversation = new Map(unreadCounts.map((u) => [u.conversationId, u._count]));
 
+  const otherUserIds = conversations
+    .map((c) => c.participants.find((p) => p.userId !== user.id)?.user.id)
+    .filter((id): id is string => id !== undefined);
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [
+        { blockerId: user.id, blockedId: { in: otherUserIds } },
+        { blockerId: { in: otherUserIds }, blockedId: user.id },
+      ],
+    },
+  });
+  const blockedByMeIds = new Set(blocks.filter((b) => b.blockerId === user.id).map((b) => b.blockedId));
+  const blockedByThemIds = new Set(blocks.filter((b) => b.blockerId !== user.id).map((b) => b.blockerId));
+
   const results = conversations
     .map((c) => {
       const other = c.participants.find((p) => p.userId !== user.id)?.user;
       const lastMessage = c.messages[0] ?? null;
+      const blockedByMe = other ? blockedByMeIds.has(other.id) : false;
+      const blockedByThem = other ? blockedByThemIds.has(other.id) : false;
       return {
         id: c.id,
         otherUserDisplayName: other?.profile?.displayName ?? null,
@@ -41,6 +57,8 @@ export async function GET() {
           : null,
         unreadCount: unreadByConversation.get(c.id) ?? 0,
         updatedAt: lastMessage?.createdAt ?? c.createdAt,
+        blockedByMe,
+        blocked: blockedByMe || blockedByThem,
       };
     })
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());

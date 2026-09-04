@@ -8,6 +8,8 @@ type Conversation = {
   otherUserDisplayName: string | null;
   lastMessage: { body: string; createdAt: string; senderId: string } | null;
   unreadCount: number;
+  blockedByMe: boolean;
+  blocked: boolean;
 };
 
 export function ConversationList() {
@@ -42,8 +44,13 @@ export function ConversationList() {
             className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
           >
             <div className="min-w-0">
-              <p className="font-medium">
-                {c.otherUserDisplayName ?? "Account no longer available"}
+              <p className="flex items-center gap-2 font-medium">
+                <span>{c.otherUserDisplayName ?? "Account no longer available"}</span>
+                {c.blocked && (
+                  <span className="inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                    {c.blockedByMe ? "Blocked" : "Can't message"}
+                  </span>
+                )}
               </p>
               {c.lastMessage && (
                 <p className="truncate text-sm text-muted-foreground">{c.lastMessage.body}</p>
