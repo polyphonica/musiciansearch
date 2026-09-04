@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { SafetyConfirmDialog } from "@/components/safety-confirm-dialog";
+import { useSafetyGate } from "@/lib/use-safety-gate";
 
 export function MessageComposer({ profileId }: { profileId: string }) {
   const router = useRouter();
@@ -11,6 +13,7 @@ export function MessageComposer({ profileId }: { profileId: string }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const safetyGate = useSafetyGate();
 
   if (!open) {
     return (
@@ -20,8 +23,7 @@ export function MessageComposer({ profileId }: { profileId: string }) {
     );
   }
 
-  async function handleSend() {
-    if (!message.trim()) return;
+  async function doSend() {
     setError(null);
     setSending(true);
     const res = await fetch("/api/conversations", {
@@ -39,6 +41,11 @@ export function MessageComposer({ profileId }: { profileId: string }) {
     router.push(`/messages/${data.conversationId}`);
   }
 
+  function handleSend() {
+    if (!message.trim()) return;
+    safetyGate.guardSend(message, doSend);
+  }
+
   return (
     <div className="space-y-2">
       <Textarea
@@ -47,16 +54,26 @@ export function MessageComposer({ profileId }: { profileId: string }) {
         placeholder="Write your message…"
         rows={3}
         autoFocus
+        disabled={!!safetyGate.riskReason}
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button onClick={handleSend} disabled={sending || !message.trim()}>
+        <Button onClick={handleSend} disabled={sending || !message.trim() || !!safetyGate.riskReason}>
           {sending ? "Sending…" : "Send"}
         </Button>
         <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>
           Cancel
         </Button>
       </div>
+      {safetyGate.riskReason && (
+        <SafetyConfirmDialog
+          reason={safetyGate.riskReason}
+          confirming={safetyGate.confirming}
+          error={safetyGate.error}
+          onCancel={safetyGate.cancel}
+          onConfirm={safetyGate.confirmAndSend}
+        />
+      )}
     </div>
   );
 }

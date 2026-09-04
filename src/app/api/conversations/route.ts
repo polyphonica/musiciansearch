@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { canMessage, getCurrentUser, hasProfile } from "@/lib/auth";
+import { canMessage, getCurrentUser, hasProfile, hasRecentMessagingSafetyAcceptance } from "@/lib/auth";
+import { detectContactRisk } from "@/lib/contact-risk";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -70,6 +71,13 @@ export async function POST(request: Request) {
 
   if (!profileId || !message) {
     return NextResponse.json({ error: "A recipient and a message are required." }, { status: 400 });
+  }
+
+  if (detectContactRisk(message) && !(await hasRecentMessagingSafetyAcceptance(user!.id))) {
+    return NextResponse.json(
+      { error: "Safety confirmation required before sending this message.", requiresSafetyConfirmation: true },
+      { status: 409 }
+    );
   }
 
   const recipientProfile = await prisma.profile.findUnique({

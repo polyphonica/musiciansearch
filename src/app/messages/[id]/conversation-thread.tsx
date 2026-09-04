@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportButton } from "@/components/report-button";
+import { SafetyConfirmDialog } from "@/components/safety-confirm-dialog";
+import { useSafetyGate } from "@/lib/use-safety-gate";
 
 type Message = {
   id: string;
@@ -23,6 +25,7 @@ export function ConversationThread({ conversationId }: { conversationId: string 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const safetyGate = useSafetyGate();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,8 +53,7 @@ export function ConversationThread({ conversationId }: { conversationId: string 
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  async function sendMessage() {
-    if (!text.trim()) return;
+  async function doSend() {
     setError(null);
     setSending(true);
     const res = await fetch(`/api/conversations/${conversationId}/messages`, {
@@ -68,6 +70,11 @@ export function ConversationThread({ conversationId }: { conversationId: string 
     const data = await res.json();
     setMessages((prev) => [...prev, data.message]);
     setText("");
+  }
+
+  function sendMessage() {
+    if (!text.trim()) return;
+    safetyGate.guardSend(text, doSend);
   }
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -123,6 +130,7 @@ export function ConversationThread({ conversationId }: { conversationId: string 
           placeholder="Write a message…"
           rows={2}
           className="flex-1"
+          disabled={!!safetyGate.riskReason}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -130,11 +138,20 @@ export function ConversationThread({ conversationId }: { conversationId: string 
             }
           }}
         />
-        <Button type="submit" disabled={sending || !text.trim()}>
+        <Button type="submit" disabled={sending || !text.trim() || !!safetyGate.riskReason}>
           Send
         </Button>
       </form>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {safetyGate.riskReason && (
+        <SafetyConfirmDialog
+          reason={safetyGate.riskReason}
+          confirming={safetyGate.confirming}
+          error={safetyGate.error}
+          onCancel={safetyGate.cancel}
+          onConfirm={safetyGate.confirmAndSend}
+        />
+      )}
     </div>
   );
 }

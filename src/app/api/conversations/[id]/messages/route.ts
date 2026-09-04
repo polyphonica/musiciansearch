@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, hasRecentMessagingSafetyAcceptance } from "@/lib/auth";
+import { detectContactRisk } from "@/lib/contact-risk";
 import { prisma } from "@/lib/prisma";
 
 async function requireParticipant(conversationId: string, userId: string) {
@@ -62,6 +63,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json().catch(() => null);
   const text = typeof body?.message === "string" ? body.message.trim().slice(0, 4000) : "";
   if (!text) return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
+
+  if (detectContactRisk(text) && !(await hasRecentMessagingSafetyAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Safety confirmation required before sending this message.", requiresSafetyConfirmation: true },
+      { status: 409 }
+    );
+  }
 
   const message = await prisma.message.create({
     data: { conversationId, senderId: user.id, body: text },

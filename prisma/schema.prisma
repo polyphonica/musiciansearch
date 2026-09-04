@@ -257,6 +257,11 @@ model DisclaimerAcceptance {
   userId             String   @map("user_id")
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   disclaimerVersion  String   @map("disclaimer_version")
+  // "signup" (the mandatory onboarding disclaimer) or "messaging_safety" (the
+  // same safety reminder re-surfaced in-chat before a risky send). Distinct
+  // rows per context, and messaging_safety rows are never deduped — each one
+  // is proof the user saw the warning immediately before that specific message.
+  context            String   @default("signup")
   acceptedAt         DateTime @default(now()) @map("accepted_at")
 
   @@map("disclaimer_acceptances")
