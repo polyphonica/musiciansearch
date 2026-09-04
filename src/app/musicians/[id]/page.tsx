@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { canMessage, getCurrentUser, hasProfile } from "@/lib/auth";
+import { hasBlocked } from "@/lib/blocks";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MessageComposer } from "./message-composer";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -74,6 +76,12 @@ export default async function MusicianDetailPage({
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profile.userId;
   const viewerHasProfile = viewer && !isOwnProfile ? await hasProfile(viewer.id) : false;
+
+  const blockedByMe =
+    viewer && !isOwnProfile ? await hasBlocked(viewer.id, profile.userId) : false;
+  const blockedByThem =
+    viewer && !isOwnProfile ? await hasBlocked(profile.userId, viewer.id) : false;
+  const canMessageThisProfile = !blockedByMe && !blockedByThem;
 
   const availabilityByDay = profile.availability.reduce<Record<number, string[]>>((acc, slot) => {
     (acc[slot.dayOfWeek] ??= []).push(slot.timeOfDay);
@@ -220,8 +228,15 @@ export default async function MusicianDetailPage({
               Create your profile to message {profile.displayName}
             </Link>
           )}
-          {viewer && canMessage(viewer) && viewerHasProfile && (
+          {viewer && canMessage(viewer) && viewerHasProfile && canMessageThisProfile && (
             <MessageComposer profileId={profile.id} />
+          )}
+          {viewer && canMessage(viewer) && viewerHasProfile && !canMessageThisProfile && (
+            <p className="text-sm text-muted-foreground">
+              {blockedByMe
+                ? "You've blocked this musician."
+                : "You can't message this musician right now."}
+            </p>
           )}
         </div>
       )}
@@ -231,7 +246,10 @@ export default async function MusicianDetailPage({
       </p>
 
       {!isOwnProfile && viewer && (
-        <ReportButton reportedUserId={profile.userId} label="Report this profile" />
+        <div className="flex items-center gap-4">
+          <ReportButton reportedUserId={profile.userId} label="Report this profile" />
+          <BlockButton userId={profile.userId} initiallyBlocked={blockedByMe} />
+        </div>
       )}
     </div>
   );

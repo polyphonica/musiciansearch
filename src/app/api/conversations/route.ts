@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { canMessage, getCurrentUser, hasProfile, hasRecentMessagingSafetyAcceptance } from "@/lib/auth";
+import { isBlockedEitherWay } from "@/lib/blocks";
 import { detectContactRisk } from "@/lib/contact-risk";
 import { prisma } from "@/lib/prisma";
 
@@ -96,6 +97,10 @@ export async function POST(request: Request) {
   const recipientId = recipientProfile.userId;
   if (recipientId === user!.id) {
     return NextResponse.json({ error: "You can't message yourself." }, { status: 400 });
+  }
+
+  if (await isBlockedEitherWay(user!.id, recipientId)) {
+    return NextResponse.json({ error: "You can't message this musician." }, { status: 403 });
   }
 
   const existing = await prisma.conversation.findFirst({

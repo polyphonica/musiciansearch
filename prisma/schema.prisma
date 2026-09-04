@@ -57,6 +57,8 @@ model User {
   reportsReceived       Report[]               @relation("ReportsReceived")
   moderationNotesWritten ModerationNote[]      @relation("ModerationNotesWritten")
   disclaimerAcceptances DisclaimerAcceptance[]
+  blocksMade            Block[]                @relation("BlocksMade")
+  blocksReceived        Block[]                @relation("BlocksReceived")
 
   @@map("users")
 }
@@ -238,6 +240,22 @@ model Report {
   notes            ModerationNote[]
 
   @@map("reports")
+}
+
+// A user-initiated, self-serve block -- distinct from Report, which goes to
+// admin moderation. A block is unidirectional to record but enforced
+// bidirectionally (see isBlockedEitherWay in src/lib/blocks.ts): neither
+// party can message the other, and neither appears in the other's search.
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String   @map("blocked_id")
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
 }
 
 model ModerationNote {

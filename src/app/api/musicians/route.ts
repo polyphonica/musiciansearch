@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { blockedUserIds } from "@/lib/blocks";
 import { resolvePostalCode } from "@/lib/geo";
 import { prisma } from "@/lib/prisma";
 import { SkillLevel } from "@/generated/prisma/enums";
@@ -31,6 +33,9 @@ export async function GET(request: Request) {
   const near = url.searchParams.get("near")?.trim() || undefined;
   const radiusMiles = Math.min(500, Math.max(1, Number(url.searchParams.get("radiusMiles")) || 25));
 
+  const viewer = await getCurrentUser();
+  const excludedUserIds = viewer ? await blockedUserIds(viewer.id) : [];
+
   let nearResolved: boolean | null = null;
   let nearProfileIds: string[] | null = null;
   if (near) {
@@ -47,7 +52,11 @@ export async function GET(request: Request) {
   }
 
   const where = {
-    user: { identityVerifiedAt: { not: null }, status: "active" as const },
+    user: {
+      identityVerifiedAt: { not: null },
+      status: "active" as const,
+      ...(excludedUserIds.length > 0 && { id: { notIn: excludedUserIds } }),
+    },
     ...(instrumentId && { instruments: { some: { instrumentId } } }),
     ...(genreId && { genres: { some: { genreId } } }),
     ...(voiceTypeId && { voiceTypes: { some: { voiceTypeId } } }),

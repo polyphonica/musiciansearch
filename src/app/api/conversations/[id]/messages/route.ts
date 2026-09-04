@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, hasRecentMessagingSafetyAcceptance } from "@/lib/auth";
+import { hasBlocked, isBlockedEitherWay } from "@/lib/blocks";
 import { detectContactRisk } from "@/lib/contact-risk";
 import { prisma } from "@/lib/prisma";
 
@@ -37,10 +38,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const other = participants.find((p) => p.userId !== user.id)?.user;
 
+  const [blockedByMe, blockedByThem] = other
+    ? await Promise.all([hasBlocked(user.id, other.id), hasBlocked(other.id, user.id)])
+    : [false, false];
+
   return NextResponse.json({
     // null (not a fallback string) when the other participant is gone entirely
     // (e.g. an account was deleted) — distinct from just having no profile yet.
     otherUserDisplayName: other?.profile?.displayName ?? null,
+    otherUserId: other?.id ?? null,
+    blockedByMe,
+    canReply: !blockedByMe && !blockedByThem,
     messages: messages.map((m) => ({
       id: m.id,
       body: m.body,
@@ -63,6 +71,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json().catch(() => null);
   const text = typeof body?.message === "string" ? body.message.trim().slice(0, 4000) : "";
   if (!text) return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
+
+  const otherParticipant = await prisma.conversationParticipant.findFirst({
+    where: { conversationId, userId: { not: user.id } },
+    select: { userId: true },
+  });
+  if (otherParticipant && (await isBlockedEitherWay(user.id, otherParticipant.userId))) {
+    return NextResponse.json({ error: "You can't send messages in this conversation." }, { status: 403 });
+  }
 
   if (detectContactRisk(text) && !(await hasRecentMessagingSafetyAcceptance(user.id))) {
     return NextResponse.json(

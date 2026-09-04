@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
 import { SafetyConfirmDialog } from "@/components/safety-confirm-dialog";
 import { useSafetyGate } from "@/lib/use-safety-gate";
 
@@ -19,6 +20,9 @@ const POLL_INTERVAL_MS = 4000;
 
 export function ConversationThread({ conversationId }: { conversationId: string }) {
   const [otherName, setOtherName] = useState<string | null>(null);
+  const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [blockedByMe, setBlockedByMe] = useState(false);
+  const [canReply, setCanReply] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,6 +40,9 @@ export function ConversationThread({ conversationId }: { conversationId: string 
         .then((data) => {
           if (cancelled) return;
           setOtherName(data.otherUserDisplayName ?? null);
+          setOtherUserId(data.otherUserId ?? null);
+          setBlockedByMe(data.blockedByMe ?? false);
+          setCanReply(data.canReply ?? true);
           setMessages(data.messages ?? []);
           setLoading(false);
         });
@@ -81,9 +88,18 @@ export function ConversationThread({ conversationId }: { conversationId: string 
 
   return (
     <div className="flex flex-1 flex-col">
-      <h1 className="mb-4 text-2xl font-semibold tracking-tight">
-        {otherName ?? "This musician's account is no longer available"}
-      </h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {otherName ?? "This musician's account is no longer available"}
+        </h1>
+        {otherUserId && (
+          <BlockButton
+            userId={otherUserId}
+            initiallyBlocked={blockedByMe}
+            onBlockedChange={(blocked) => setCanReply(!blocked)}
+          />
+        )}
+      </div>
       <div className="flex-1 space-y-3 overflow-y-auto">
         {messages.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.isMine ? "items-end" : "items-start"}`}>
@@ -117,31 +133,39 @@ export function ConversationThread({ conversationId }: { conversationId: string 
         )}
         <div ref={bottomRef} />
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-        className="mt-4 flex items-end gap-2"
-      >
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Write a message…"
-          rows={2}
-          className="flex-1"
-          disabled={!!safetyGate.riskReason}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
+      {canReply ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage();
           }}
-        />
-        <Button type="submit" disabled={sending || !text.trim() || !!safetyGate.riskReason}>
-          Send
-        </Button>
-      </form>
+          className="mt-4 flex items-end gap-2"
+        >
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Write a message…"
+            rows={2}
+            className="flex-1"
+            disabled={!!safetyGate.riskReason}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+          />
+          <Button type="submit" disabled={sending || !text.trim() || !!safetyGate.riskReason}>
+            Send
+          </Button>
+        </form>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {blockedByMe
+            ? "You've blocked this person — unblock them to send messages."
+            : "You can no longer send messages in this conversation."}
+        </p>
+      )}
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       {safetyGate.riskReason && (
         <SafetyConfirmDialog
